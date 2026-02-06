@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCP FOUNDATION // TEST PROTOCOLS</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --bg-color: #050505;
+            --term-glass: #0a0a0a;
+            --primary-red: #ff3333;
+            --dim-red: #5c1111;
+            --glow: 0 0 10px rgba(255, 51, 51, 0.7);
+            --scanline-color: rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--primary-red);
+            font-family: 'Share Tech Mono', monospace;
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            overflow: hidden; /* Scrollen innerhalb des Containers */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-transform: uppercase;
+        }
+
+        /* CRT Screen Effects */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 100;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+        
+        @keyframes scanline {
+            0% { transform: translateY(-100vh); }
+            100% { transform: translateY(100vh); }
+        }
+        
+        body::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 10px;
+            background: rgba(255, 51, 51, 0.1);
+            animation: scanline 6s linear infinite;
+            pointer-events: none;
+            z-index: 101;
+            opacity: 0.5;
+        }
+
+        /* Container Design */
+        #terminal-container {
+            width: 90%;
+            max-width: 1200px;
+            height: 90vh;
+            background-color: var(--term-glass);
+            border: 2px solid var(--primary-red);
+            box-shadow: var(--glow), inset 0 0 20px var(--dim-red);
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            position: relative;
+            z-index: 10;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            border-bottom: 2px solid var(--primary-red);
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 0, 0, 0.05);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            text-shadow: var(--glow);
+        }
+
+        .struck-through {
+            position: relative;
+            display: inline-block;
+        }
+        .struck-through::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: -5%; width: 110%; height: 3px;
+            background: var(--primary-red);
+            transform: rotate(-5deg);
+            box-shadow: 0 0 5px var(--primary-red);
+        }
+
+        /* Main Layout */
+        main {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            overflow: hidden;
+        }
+
+        /* Sidebar Form */
+        #input-panel {
+            border-right: 1px solid var(--dim-red);
+            padding: 20px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: rgba(255, 51, 51, 0.7);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            background: black;
+            border: 1px solid var(--primary-red);
+            color: var(--primary-red);
+            font-family: 'Share Tech Mono', monospace;
+            padding: 8px;
+            box-sizing: border-box;
+            outline: none;
+            font-size: 1rem;
+            transition: box-shadow 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            box-shadow: var(--glow);
+        }
+
+        input:disabled {
+            border-color: #333;
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        button {
+            width: 100%;
+            background: var(--dim-red);
+            border: 1px solid var(--primary-red);
+            color: var(--primary-red);
+            padding: 10px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--primary-red);
+            color: black;
+            box-shadow: var(--glow);
+        }
+
+        /* Database View */
+        #data-panel {
+            padding: 0;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--dim-red);
+            position: sticky;
+            top: 0;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid var(--primary-red);
+            font-size: 0.9rem;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid var(--dim-red);
+            font-size: 0.9rem;
+            vertical-align: top;
+        }
+
+        tr:hover {
+            background: rgba(255, 51, 51, 0.1);
+        }
+
+        /* Utility Classes */
+        .status-bar {
+            grid-column: 1 / -1;
+            border-top: 1px solid var(--primary-red);
+            padding: 5px 20px;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            background: black;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .checkbox-wrapper input {
+            width: auto;
+        }
+
+        /* P2P Section */
+        .p2p-controls {
+            margin-top: 30px;
+            border-top: 1px dashed var(--dim-red);
+            padding-top: 15px;
+        }
+        .p2p-status {
+            font-size: 0.8rem;
+            color: #0f0; /* Green for connected */
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .copy-icon {
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 0.8rem;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: black;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--dim-red);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-red);
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="terminal-container">
+    <header>
+        <h1>DATENBANK FÜR <span class="struck-through">UNETHISCHE</span> WISSENSCHAFTLER</h1>
+        <div style="text-align: right; font-size: 0.8rem;">
+            SECURE. CONTAIN. PROTECT.<br>
+            CLEARANCE LEVEL 4 REQUIRED
+        </div>
+    </header>
+
+    <main>
+        <div id="input-panel">
+            <h3 style="border-bottom: 1px solid var(--primary-red); padding-bottom: 5px;">NEUES PROTOKOLL</h3>
+            
+            <div class="form-group">
+                <label>DATUM</label>
+                <input type="date" id="inpDate">
+            </div>
+
+            <div class="form-group">
+                <label>TEST-CODENAME</label>
+                <input type="text" id="inpTestName" placeholder="Z.B. PROJEKT OLYMPUS">
+            </div>
+
+            <div class="form-group">
+                <label>SCP OBJEKT-ID</label>
+                <input type="text" id="inpSCP" placeholder="SCP-XXXX">
+            </div>
+
+            <div class="form-group">
+                <label>KLASSIFIZIERUNG</label>
+                <select id="inpClass">
+                    <option value="SAFE">SAFE</option>
+                    <option value="EUCLID">EUCLID</option>
+                    <option value="KETER">KETER</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>LEITENDER WISSENSCHAFTLER</label>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="chkAnon" onchange="toggleNameField()">
+                    <label for="chkAnon" style="margin:0; cursor:pointer;">[ANONYMISIEREN]</label>
+                </div>
+                <input type="text" id="inpScientist" placeholder="DR. [NAME]" style="margin-top: 5px;">
+            </div>
+
+            <div class="form-group">
+                <label>PROTOKOLL / NOTIZEN</label>
+                <textarea id="inpProtocol" rows="4" placeholder="TESTERGEBNISSE EINGEBEN..."></textarea>
+            </div>
+
+            <button onclick="addEntry()">DATEN HOCHLADEN</button>
+
+            <div class="p2p-controls">
+                <label>NETZWERK SYNCHRONISATION (P2P)</label>
+                <div style="font-size: 0.75rem; margin-bottom: 5px; color: #888;">
+                    DEINE ID: <span id="my-peer-id" style="color:white; font-weight:bold;">GENERATING...</span>
+                </div>
+                <input type="text" id="remote-peer-id" placeholder="PARTNER ID EINGEBEN">
+                <button onclick="connectToPeer()" style="margin-top: 5px; font-size: 0.9rem;">VERBINDUNG HERSTELLEN</button>
+                <div id="p2p-status" class="p2p-status">NETZWERK AKTIV - DATEN WERDEN GETEILT</div>
+            </div>
+        </div>
+
+        <div id="data-panel">
+            <table id="logTable">
+                <thead>
+                    <tr>
+                        <th style="width: 15%">DATUM</th>
+                        <th style="width: 10%">SCP</th>
+                        <th style="width: 10%">KLASSE</th>
+                        <th style="width: 20%">TEST</th>
+                        <th style="width: 15%">LEITER</th>
+                        <th>PROTOKOLL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div class="status-bar">
+        <span id="system-msg">SYSTEM: ONLINE</span>
+        <span id="clock">00:00:00</span>
+    </div>
+</div>
+
+<script>
+    // --- 1. INITIAL SETUP & CLOCK ---
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock').innerText = now.toISOString().split('T')[1].split('.')[0] + " ZULU";
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    document.getElementById('inpDate').valueAsDate = new Date();
+
+    // --- 2. DATA MANAGEMENT (LOCAL STORAGE) ---
+    let protocols = JSON.parse(localStorage.getItem('scp_protocols')) || [];
+    renderTable();
+
+    function toggleNameField() {
+        const isAnon = document.getElementById('chkAnon').checked;
+        const nameField = document.getElementById('inpScientist');
+        
+        if (isAnon) {
+            nameField.value = "[REDACTED]";
+            nameField.disabled = true;
+        } else {
+            if(nameField.value === "[REDACTED]") nameField.value = "";
+            nameField.disabled = false;
+        }
+    }
+
+    function addEntry() {
+        const date = document.getElementById('inpDate').value;
+        const testName = document.getElementById('inpTestName').value.toUpperCase();
+        const scp = document.getElementById('inpSCP').value.toUpperCase();
+        const sClass = document.getElementById('inpClass').value;
+        const isAnon = document.getElementById('chkAnon').checked;
+        let scientist = document.getElementById('inpScientist').value.toUpperCase();
+        const text = document.getElementById('inpProtocol').value;
+
+        if (!date || !testName || !scp) {
+            alert("FEHLER: PFLICHTFELDER FEHLEN");
+            return;
+        }
+
+        if (isAnon) scientist = "[REDACTED]";
+
+        const entry = {
+            id: Date.now().toString(), // Simple Unique ID
+            date, testName, scp, sClass, scientist, text
+        };
+
+        protocols.unshift(entry); // Add to top
+        saveAndRender();
+        broadcastData(protocols); // P2P Sync
+        
+        // Reset Inputs
+        document.getElementById('inpTestName').value = "";
+        document.getElementById('inpProtocol').value = "";
+        // Keep name/scp for convenience
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('scp_protocols', JSON.stringify(protocols));
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.querySelector('#logTable tbody');
+        tbody.innerHTML = "";
+
+        protocols.forEach(p => {
+            const tr = document.createElement('tr');
+            // Check for specific keywords to color code classes (optional polish)
+            let classColor = 'var(--primary-red)';
+            if(p.sClass === 'SAFE') classColor = '#00ff00';
+            if(p.sClass === 'KETER') classColor = '#ff0000';
+            
+            tr.innerHTML = `
+                <td>${p.date}</td>
+                <td style="font-weight:bold;">${p.scp}</td>
+                <td style="color:${classColor}">${p.sClass}</td>
+                <td>${p.testName}</td>
+                <td>${p.scientist}</td>
+                <td style="font-size:0.85rem; color:#ffaaaa;">${p.text}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // --- 3. P2P SYNC LOGIC (PEERJS) ---
+    // Nutzung des öffentlichen PeerJS Servers (Cloud)
+    const peer = new Peer(); 
+    let conn = null;
+
+    peer.on('open', function(id) {
+        document.getElementById('my-peer-id').innerText = id;
+        document.getElementById('system-msg').innerText = "SYSTEM: NETZWERK BEREIT";
+    });
+
+    peer.on('connection', function(c) {
+        // Wenn sich jemand mit uns verbindet
+        conn = c;
+        setupConnection();
+    });
+
+    peer.on('error', function(err) {
+        console.log(err);
+        document.getElementById('system-msg').innerText = "SYSTEM: NETZWERK FEHLER";
+    });
+
+    function connectToPeer() {
+        const remoteId = document.getElementById('remote-peer-id').value;
+        if(!remoteId) return;
+        
+        conn = peer.connect(remoteId);
+        setupConnection();
+    }
+
+    function setupConnection() {
+        if(!conn) return;
+
+        conn.on('open', function() {
+            document.getElementById('p2p-status').style.display = "block";
+            document.getElementById('p2p-status').innerText = "VERBUNDEN MIT: " + conn.peer;
+            
+            // Sofortiger Sync bei Verbindung: Sende meine Daten
+            conn.send({type: 'SYNC', data: protocols});
+        });
+
+        conn.on('data', function(data) {
+            if(data.type === 'SYNC') {
+                mergeProtocols(data.data);
+            }
+        });
+    }
+
+    function broadcastData(data) {
+        if (conn && conn.open) {
+            conn.send({type: 'SYNC', data: data});
+        }
+    }
+
+    function mergeProtocols(incomingData) {
+        // Sehr einfacher Merge: Wir nehmen alles, was wir noch nicht haben (basierend auf ID)
+        let changed = false;
+        const currentIds = new Set(protocols.map(p => p.id));
+
+        incomingData.forEach(item => {
+            if(!currentIds.has(item.id)) {
+                protocols.push(item);
+                changed = true;
+            }
+        });
+
+        if(changed) {
+            // Sortieren nach Datum (neu oben)
+            protocols.sort((a, b) => new Date(b.date) - new Date(a.date));
+            saveAndRender();
+            alert("NEUE DATEN VOM NETZWERK EMPFANGEN.");
+        }
+    }
+</script>
+
+</body>
+</html>
