@@ -59,7 +59,6 @@
             opacity: 0.5;
         }
 
-        /* Container Design */
         #terminal-container {
             width: 90%;
             max-width: 1200px;
@@ -103,7 +102,6 @@
             box-shadow: 0 0 5px var(--primary-red);
         }
 
-        /* Main Layout */
         main {
             display: grid;
             grid-template-columns: 350px 1fr;
@@ -143,12 +141,6 @@
 
         input:focus, select:focus, textarea:focus {
             box-shadow: var(--glow);
-        }
-
-        input:disabled {
-            border-color: #333;
-            color: #555;
-            cursor: not-allowed;
         }
 
         button {
@@ -199,10 +191,6 @@
             vertical-align: top;
         }
 
-        tr:hover {
-            background: rgba(255, 51, 51, 0.1);
-        }
-
         .status-bar {
             grid-column: 1 / -1;
             border-top: 1px solid var(--primary-red);
@@ -218,21 +206,27 @@
             align-items: center;
             gap: 10px;
         }
-        .checkbox-wrapper input {
-            width: auto;
-        }
-
-        /* Cloud Section */
-        .cloud-controls {
-            margin-top: 30px;
+        
+        .cloud-controls, .overseer-controls {
+            margin-top: 20px;
             border-top: 1px dashed var(--dim-red);
             padding-top: 15px;
         }
 
+        .btn-delete {
+            background: #220000;
+            border: 1px solid var(--primary-red);
+            color: var(--primary-red);
+            padding: 2px 8px;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+
+        .btn-delete:hover { background: var(--primary-red); color: black; }
+
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: black; }
         ::-webkit-scrollbar-thumb { background: var(--dim-red); }
-        ::-webkit-scrollbar-thumb:hover { background: var(--primary-red); }
 
     </style>
 </head>
@@ -251,21 +245,10 @@
         <div id="input-panel">
             <h3 style="border-bottom: 1px solid var(--primary-red); padding-bottom: 5px;">NEUES PROTOKOLL</h3>
             
-            <div class="form-group">
-                <label>DATUM</label>
-                <input type="date" id="inpDate">
-            </div>
-
-            <div class="form-group">
-                <label>TEST-CODENAME</label>
-                <input type="text" id="inpTestName" placeholder="Z.B. PROJEKT OLYMPUS">
-            </div>
-
-            <div class="form-group">
-                <label>SCP OBJEKT-ID</label>
-                <input type="text" id="inpSCP" placeholder="SCP-XXXX">
-            </div>
-
+            <div class="form-group"><label>DATUM</label><input type="date" id="inpDate"></div>
+            <div class="form-group"><label>TEST-CODENAME</label><input type="text" id="inpTestName" placeholder="Z.B. PROJEKT OLYMPUS"></div>
+            <div class="form-group"><label>SCP OBJEKT-ID</label><input type="text" id="inpSCP" placeholder="SCP-XXXX"></div>
+            
             <div class="form-group">
                 <label>KLASSIFIZIERUNG</label>
                 <select id="inpClass">
@@ -284,19 +267,20 @@
                 <input type="text" id="inpScientist" placeholder="DR. [NAME]" style="margin-top: 5px;">
             </div>
 
-            <div class="form-group">
-                <label>PROTOKOLL / NOTIZEN</label>
-                <textarea id="inpProtocol" rows="4" placeholder="TESTERGEBNISSE EINGEBEN..."></textarea>
-            </div>
+            <div class="form-group"><label>PROTOKOLL / NOTIZEN</label><textarea id="inpProtocol" rows="4"></textarea></div>
 
             <button onclick="addEntry()">DATEN HOCHLADEN</button>
 
+            <div class="overseer-controls">
+                <label>OVERSEER-KEY EINGABE</label>
+                <input type="password" id="overseerKey" placeholder="KEY EINGEBEN..." style="margin-bottom: 5px;">
+                <button onclick="authOverseer()" style="font-size: 0.8rem; height: 30px; padding: 0;">AUTHORISIEREN</button>
+            </div>
+
             <div class="cloud-controls">
                 <label>CLOUD-STATUS</label>
-                <div id="cloud-info" style="font-size: 0.75rem; margin-top: 5px; color: #888;">
-                    VERBUNDEN MIT ZENTRAL-SERVER: <span style="color: #0f0;">AKTIV</span>
-                </div>
-                <button onclick="fetchFromCloud()" style="margin-top: 10px; font-size: 0.8rem; background: transparent;">RE-SYNC DATABASE</button>
+                <div id="cloud-info" style="font-size: 0.7rem; color: #888;">VERBUNDEN: <span style="color: #0f0;">AKTIV</span></div>
+                <button onclick="fetchFromCloud()" style="margin-top: 10px; font-size: 0.8rem; background: transparent;">RE-SYNC</button>
             </div>
         </div>
 
@@ -310,6 +294,7 @@
                         <th style="width: 20%">TEST</th>
                         <th style="width: 15%">LEITER</th>
                         <th>PROTOKOLL</th>
+                        <th id="admin-th" style="display:none; width: 60px;">O5-CMD</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -318,115 +303,106 @@
     </main>
 
     <div class="status-bar">
-        <span id="system-msg">SYSTEM: INITIALISIERE CLOUD-LINK...</span>
-        <span id="clock">00:00:00</span>
+        <span id="system-msg">SYSTEM: ONLINE</span>
+        <span id="clock">00:00:00 ZULU</span>
     </div>
 </div>
 
 <script>
-    // --- 1. SUPABASE CONFIGURATION ---
     const SUPABASE_URL = 'https://kvlaqczuwlzbqpurwjul.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2bGFxY3p1wlzbqpurwjuliwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MDM3ODMsImV4cCI6MjA4NTk3OTc4M30.XajUaVnreD4Awg38mUY5BpWWCMQvCjW4QNJdnt230rw';
     const supabase = libsupabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // --- 2. INITIAL SETUP & CLOCK ---
+    let overseerAccess = false;
+
+    // --- CLOCK FIX ---
     function updateClock() {
         const now = new Date();
-        document.getElementById('clock').innerText = now.toISOString().split('T')[1].split('.')[0] + " ZULU";
+        const timeStr = now.getHours().toString().padStart(2, '0') + ":" + 
+                        now.getMinutes().toString().padStart(2, '0') + ":" + 
+                        now.getSeconds().toString().padStart(2, '0');
+        document.getElementById('clock').innerText = timeStr + " ZULU";
     }
     setInterval(updateClock, 1000);
     updateClock();
 
     document.getElementById('inpDate').valueAsDate = new Date();
-
-    // Start-Up: Daten laden
     fetchFromCloud();
 
     function toggleNameField() {
         const isAnon = document.getElementById('chkAnon').checked;
         const nameField = document.getElementById('inpScientist');
-        if (isAnon) {
-            nameField.value = "[REDACTED]";
-            nameField.disabled = true;
-        } else {
-            if(nameField.value === "[REDACTED]") nameField.value = "";
-            nameField.disabled = false;
-        }
+        if (isAnon) { nameField.value = "[REDACTED]"; nameField.disabled = true; }
+        else { if(nameField.value === "[REDACTED]") nameField.value = ""; nameField.disabled = false; }
     }
 
-    // --- 3. CLOUD DATA MANAGEMENT ---
     async function fetchFromCloud() {
-        document.getElementById('system-msg').innerText = "SYSTEM: SYNCHRONISIERE...";
-        const { data, error } = await supabase
-            .from('protocols')
-            .select('*')
-            .order('id', { ascending: false });
-
-        if (error) {
-            document.getElementById('system-msg').innerText = "SYSTEM: FEHLER BEIM LADEN";
-            console.error(error);
-        } else {
-            renderTable(data);
-            document.getElementById('system-msg').innerText = "SYSTEM: CLOUD SYNCHRONISIERT";
-        }
+        const { data, error } = await supabase.from('protocols').select('*').order('id', { ascending: false });
+        if (!error) renderTable(data);
     }
 
     async function addEntry() {
-        const date = document.getElementById('inpDate').value;
-        const test_name = document.getElementById('inpTestName').value.toUpperCase();
-        const scp_id = document.getElementById('inpSCP').value.toUpperCase();
-        const sClass = document.getElementById('inpClass').value;
-        const isAnon = document.getElementById('chkAnon').checked;
-        let scientist = document.getElementById('inpScientist').value.toUpperCase();
-        const protocol_text = document.getElementById('inpProtocol').value;
-
-        if (!date || !test_name || !scp_id) {
-            alert("FEHLER: PFLICHTFELDER FEHLEN");
-            return;
-        }
-
-        if (isAnon) scientist = "[REDACTED]";
-
         const entry = {
-            date, test_name, scp_id, class: sClass, scientist, protocol_text
+            date: document.getElementById('inpDate').value,
+            test_name: document.getElementById('inpTestName').value.toUpperCase(),
+            scp_id: document.getElementById('inpSCP').value.toUpperCase(),
+            class: document.getElementById('inpClass').value,
+            scientist: document.getElementById('inpScientist').value.toUpperCase() || "[REDACTED]",
+            protocol_text: document.getElementById('inpProtocol').value
         };
-
-        document.getElementById('system-msg').innerText = "SYSTEM: SENDE DATEN...";
-        
+        if (!entry.date || !entry.test_name) return alert("PFLICHTFELDER FEHLEN");
         const { error } = await supabase.from('protocols').insert([entry]);
+        if (!error) { fetchFromCloud(); document.getElementById('inpProtocol').value = ""; }
+    }
 
-        if (error) {
-            alert("FEHLER BEIM HOCHLADEN: " + error.message);
-        } else {
-            // Reset UI
-            document.getElementById('inpTestName').value = "";
-            document.getElementById('inpProtocol').value = "";
+    // --- OVERSEER LOGIC & LOGGING ---
+    function authOverseer() {
+        const keyInput = document.getElementById('overseerKey');
+        const now = new Date();
+        
+        if (keyInput.value === "admin123") {
+            overseerAccess = true;
+            document.getElementById('admin-th').style.display = "table-cell";
+            document.getElementById('system-msg').innerText = "O5-AUTHORIZATION GRANTED";
+            document.getElementById('system-msg').style.color = "#0f0";
+            
+            // LOGGING AKTIVITÄT
+            console.log(`%c [O5-LOG] ACCESS GRANTED: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`, "color: yellow; background: red; font-weight: bold;");
+            
             fetchFromCloud();
+            alert("OVERSEER-MODUS AKTIVIERT. LÖSCHBERECHTIGUNG ERTEILT.");
+            keyInput.value = "";
+        } else {
+            console.warn(`%c [SECURITY ALERT] FAILED ACCESS ATTEMPT AT ${now.toISOString()}`, "color: red; font-weight: bold;");
+            alert("ACCESS DENIED. INCIDENT REPORTED TO SITE-01.");
+        }
+    }
+
+    async function deleteEntry(id) {
+        if (confirm("PROTOKOLL ENDGÜLTIG TERMINIEREN?")) {
+            const { error } = await supabase.from('protocols').delete().eq('id', id);
+            if (!error) fetchFromCloud();
         }
     }
 
     function renderTable(data) {
         const tbody = document.querySelector('#logTable tbody');
         tbody.innerHTML = "";
-
         data.forEach(p => {
             const tr = document.createElement('tr');
-            let classColor = 'var(--primary-red)';
-            if(p.class === 'SAFE') classColor = '#00ff00';
-            if(p.class === 'KETER') classColor = '#ff0000';
-            
+            let classColor = p.class === 'SAFE' ? '#0f0' : (p.class === 'KETER' ? '#f00' : 'var(--primary-red)');
             tr.innerHTML = `
                 <td>${p.date}</td>
-                <td style="font-weight:bold;">${p.scp_id}</td>
+                <td><strong>${p.scp_id}</strong></td>
                 <td style="color:${classColor}">${p.class}</td>
                 <td>${p.test_name}</td>
                 <td>${p.scientist}</td>
-                <td style="font-size:0.85rem; color:#ffaaaa;">${p.protocol_text}</td>
+                <td style="color:#ffaaaa; font-size:0.85rem;">${p.protocol_text}</td>
+                ${overseerAccess ? `<td><button class="btn-delete" onclick="deleteEntry(${p.id})">[X]</button></td>` : ''}
             `;
             tbody.appendChild(tr);
         });
     }
 </script>
-
 </body>
 </html>
