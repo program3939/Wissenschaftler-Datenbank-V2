@@ -6,7 +6,7 @@ Status: Aktiv / Dezentralisiert
 Sicherheitsfreigabe: Level-3 (Nach Xelvar-Klassenprinzip: 4)
 
 **Die Entstehung**
-Die Datenbank wurde aus Blut und Misstrauen geboren. Gegründet von Dr. rer. nat. Julius Xelvar, einem Mann, der den offiziellen Berichten der Ethikkommission niemals traute. Als sein Bruder Julian Xelvar unter mysteriösen Umständen starb, lautete das Urteil: "Autounfall" - kurz bevor er etwas präsentieren wollte anscheinennd eine Testidee namens "DOminion-682" worin es geht SCP-682 zu bändigen. Doch Julian besaß keinen Führerschein und die strengen Ausgangssperren der Site machten eine private Fahrt unmöglich.
+Die Datenbank wurde aus Blut und Misstrauen geboren. Gegründet von Dr. rer. nat. Julius Xelvar, einem Mann, der den offiziellen Berichten der Ethikkommission niemals traute. Als sein Bruder Julian Xelvar unter mysteriösen Umständen starb, lautete das Urteil: "Autounfall" - kurz bevor er etwas präsentieren wollte anscheinennd eine Testidee namens "Dominion-682" worin es geht SCP-682 zu bändigen. Doch Julian besaß keinen Führerschein und die strengen Ausgangssperren der Site machten eine private Fahrt unmöglich.
 
 Julius wusste: Sein Bruder wurde hingerichtet oder entführt. War es eine Information, die er nicht hören durfte? Ein Dokument, das er nicht sehen sollte? Julius schwor sich, dass das Wissen der Foundation niemals im Schatten sterben darf. Er schuf dieses Terminal, um jegliche Forschungsergebnisse, Anomalien und Geheimnisse festzuhalten – damit das Schweigen der Toten den Unterdrückern nichts mehr bringt.
 
