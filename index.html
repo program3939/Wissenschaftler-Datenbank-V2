@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SCP FOUNDATION // TEST PROTOCOLS</title>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
@@ -24,7 +24,7 @@
             margin: 0;
             padding: 20px;
             height: 100vh;
-            overflow: hidden; /* Scrollen innerhalb des Containers */
+            overflow: hidden; 
             display: flex;
             justify-content: center;
             align-items: center;
@@ -74,7 +74,6 @@
             overflow: hidden;
         }
 
-        /* Header */
         header {
             border-bottom: 2px solid var(--primary-red);
             padding: 15px 25px;
@@ -111,7 +110,6 @@
             overflow: hidden;
         }
 
-        /* Sidebar Form */
         #input-panel {
             border-right: 1px solid var(--dim-red);
             padding: 20px;
@@ -173,7 +171,6 @@
             box-shadow: var(--glow);
         }
 
-        /* Database View */
         #data-panel {
             padding: 0;
             overflow-y: auto;
@@ -206,7 +203,6 @@
             background: rgba(255, 51, 51, 0.1);
         }
 
-        /* Utility Classes */
         .status-bar {
             grid-column: 1 / -1;
             border-top: 1px solid var(--primary-red);
@@ -226,38 +222,17 @@
             width: auto;
         }
 
-        /* P2P Section */
-        .p2p-controls {
+        /* Cloud Section */
+        .cloud-controls {
             margin-top: 30px;
             border-top: 1px dashed var(--dim-red);
             padding-top: 15px;
         }
-        .p2p-status {
-            font-size: 0.8rem;
-            color: #0f0; /* Green for connected */
-            margin-top: 5px;
-            display: none;
-        }
-        
-        .copy-icon {
-            cursor: pointer;
-            text-decoration: underline;
-            font-size: 0.8rem;
-        }
 
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: black;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--dim-red);
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--primary-red);
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: black; }
+        ::-webkit-scrollbar-thumb { background: var(--dim-red); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary-red); }
 
     </style>
 </head>
@@ -316,14 +291,12 @@
 
             <button onclick="addEntry()">DATEN HOCHLADEN</button>
 
-            <div class="p2p-controls">
-                <label>NETZWERK SYNCHRONISATION (P2P)</label>
-                <div style="font-size: 0.75rem; margin-bottom: 5px; color: #888;">
-                    DEINE ID: <span id="my-peer-id" style="color:white; font-weight:bold;">GENERATING...</span>
+            <div class="cloud-controls">
+                <label>CLOUD-STATUS</label>
+                <div id="cloud-info" style="font-size: 0.75rem; margin-top: 5px; color: #888;">
+                    VERBUNDEN MIT ZENTRAL-SERVER: <span style="color: #0f0;">AKTIV</span>
                 </div>
-                <input type="text" id="remote-peer-id" placeholder="PARTNER ID EINGEBEN">
-                <button onclick="connectToPeer()" style="margin-top: 5px; font-size: 0.9rem;">VERBINDUNG HERSTELLEN</button>
-                <div id="p2p-status" class="p2p-status">NETZWERK AKTIV - DATEN WERDEN GETEILT</div>
+                <button onclick="fetchFromCloud()" style="margin-top: 10px; font-size: 0.8rem; background: transparent;">RE-SYNC DATABASE</button>
             </div>
         </div>
 
@@ -339,20 +312,24 @@
                         <th>PROTOKOLL</th>
                     </tr>
                 </thead>
-                <tbody>
-                    </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </main>
 
     <div class="status-bar">
-        <span id="system-msg">SYSTEM: ONLINE</span>
+        <span id="system-msg">SYSTEM: INITIALISIERE CLOUD-LINK...</span>
         <span id="clock">00:00:00</span>
     </div>
 </div>
 
 <script>
-    // --- 1. INITIAL SETUP & CLOCK ---
+    // --- 1. SUPABASE CONFIGURATION ---
+    const SUPABASE_URL = 'https://kvlaqczuwlzbqpurwjul.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2bGFxY3p1wlzbqpurwjuliwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MDM3ODMsImV4cCI6MjA4NTk3OTc4M30.XajUaVnreD4Awg38mUY5BpWWCMQvCjW4QNJdnt230rw';
+    const supabase = libsupabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // --- 2. INITIAL SETUP & CLOCK ---
     function updateClock() {
         const now = new Date();
         document.getElementById('clock').innerText = now.toISOString().split('T')[1].split('.')[0] + " ZULU";
@@ -362,14 +339,12 @@
 
     document.getElementById('inpDate').valueAsDate = new Date();
 
-    // --- 2. DATA MANAGEMENT (LOCAL STORAGE) ---
-    let protocols = JSON.parse(localStorage.getItem('scp_protocols')) || [];
-    renderTable();
+    // Start-Up: Daten laden
+    fetchFromCloud();
 
     function toggleNameField() {
         const isAnon = document.getElementById('chkAnon').checked;
         const nameField = document.getElementById('inpScientist');
-        
         if (isAnon) {
             nameField.value = "[REDACTED]";
             nameField.disabled = true;
@@ -379,16 +354,33 @@
         }
     }
 
-    function addEntry() {
+    // --- 3. CLOUD DATA MANAGEMENT ---
+    async function fetchFromCloud() {
+        document.getElementById('system-msg').innerText = "SYSTEM: SYNCHRONISIERE...";
+        const { data, error } = await supabase
+            .from('protocols')
+            .select('*')
+            .order('id', { ascending: false });
+
+        if (error) {
+            document.getElementById('system-msg').innerText = "SYSTEM: FEHLER BEIM LADEN";
+            console.error(error);
+        } else {
+            renderTable(data);
+            document.getElementById('system-msg').innerText = "SYSTEM: CLOUD SYNCHRONISIERT";
+        }
+    }
+
+    async function addEntry() {
         const date = document.getElementById('inpDate').value;
-        const testName = document.getElementById('inpTestName').value.toUpperCase();
-        const scp = document.getElementById('inpSCP').value.toUpperCase();
+        const test_name = document.getElementById('inpTestName').value.toUpperCase();
+        const scp_id = document.getElementById('inpSCP').value.toUpperCase();
         const sClass = document.getElementById('inpClass').value;
         const isAnon = document.getElementById('chkAnon').checked;
         let scientist = document.getElementById('inpScientist').value.toUpperCase();
-        const text = document.getElementById('inpProtocol').value;
+        const protocol_text = document.getElementById('inpProtocol').value;
 
-        if (!date || !testName || !scp) {
+        if (!date || !test_name || !scp_id) {
             alert("FEHLER: PFLICHTFELDER FEHLEN");
             return;
         }
@@ -396,119 +388,43 @@
         if (isAnon) scientist = "[REDACTED]";
 
         const entry = {
-            id: Date.now().toString(), // Simple Unique ID
-            date, testName, scp, sClass, scientist, text
+            date, test_name, scp_id, class: sClass, scientist, protocol_text
         };
 
-        protocols.unshift(entry); // Add to top
-        saveAndRender();
-        broadcastData(protocols); // P2P Sync
+        document.getElementById('system-msg').innerText = "SYSTEM: SENDE DATEN...";
         
-        // Reset Inputs
-        document.getElementById('inpTestName').value = "";
-        document.getElementById('inpProtocol').value = "";
-        // Keep name/scp for convenience
+        const { error } = await supabase.from('protocols').insert([entry]);
+
+        if (error) {
+            alert("FEHLER BEIM HOCHLADEN: " + error.message);
+        } else {
+            // Reset UI
+            document.getElementById('inpTestName').value = "";
+            document.getElementById('inpProtocol').value = "";
+            fetchFromCloud();
+        }
     }
 
-    function saveAndRender() {
-        localStorage.setItem('scp_protocols', JSON.stringify(protocols));
-        renderTable();
-    }
-
-    function renderTable() {
+    function renderTable(data) {
         const tbody = document.querySelector('#logTable tbody');
         tbody.innerHTML = "";
 
-        protocols.forEach(p => {
+        data.forEach(p => {
             const tr = document.createElement('tr');
-            // Check for specific keywords to color code classes (optional polish)
             let classColor = 'var(--primary-red)';
-            if(p.sClass === 'SAFE') classColor = '#00ff00';
-            if(p.sClass === 'KETER') classColor = '#ff0000';
+            if(p.class === 'SAFE') classColor = '#00ff00';
+            if(p.class === 'KETER') classColor = '#ff0000';
             
             tr.innerHTML = `
                 <td>${p.date}</td>
-                <td style="font-weight:bold;">${p.scp}</td>
-                <td style="color:${classColor}">${p.sClass}</td>
-                <td>${p.testName}</td>
+                <td style="font-weight:bold;">${p.scp_id}</td>
+                <td style="color:${classColor}">${p.class}</td>
+                <td>${p.test_name}</td>
                 <td>${p.scientist}</td>
-                <td style="font-size:0.85rem; color:#ffaaaa;">${p.text}</td>
+                <td style="font-size:0.85rem; color:#ffaaaa;">${p.protocol_text}</td>
             `;
             tbody.appendChild(tr);
         });
-    }
-
-    // --- 3. P2P SYNC LOGIC (PEERJS) ---
-    // Nutzung des öffentlichen PeerJS Servers (Cloud)
-    const peer = new Peer(); 
-    let conn = null;
-
-    peer.on('open', function(id) {
-        document.getElementById('my-peer-id').innerText = id;
-        document.getElementById('system-msg').innerText = "SYSTEM: NETZWERK BEREIT";
-    });
-
-    peer.on('connection', function(c) {
-        // Wenn sich jemand mit uns verbindet
-        conn = c;
-        setupConnection();
-    });
-
-    peer.on('error', function(err) {
-        console.log(err);
-        document.getElementById('system-msg').innerText = "SYSTEM: NETZWERK FEHLER";
-    });
-
-    function connectToPeer() {
-        const remoteId = document.getElementById('remote-peer-id').value;
-        if(!remoteId) return;
-        
-        conn = peer.connect(remoteId);
-        setupConnection();
-    }
-
-    function setupConnection() {
-        if(!conn) return;
-
-        conn.on('open', function() {
-            document.getElementById('p2p-status').style.display = "block";
-            document.getElementById('p2p-status').innerText = "VERBUNDEN MIT: " + conn.peer;
-            
-            // Sofortiger Sync bei Verbindung: Sende meine Daten
-            conn.send({type: 'SYNC', data: protocols});
-        });
-
-        conn.on('data', function(data) {
-            if(data.type === 'SYNC') {
-                mergeProtocols(data.data);
-            }
-        });
-    }
-
-    function broadcastData(data) {
-        if (conn && conn.open) {
-            conn.send({type: 'SYNC', data: data});
-        }
-    }
-
-    function mergeProtocols(incomingData) {
-        // Sehr einfacher Merge: Wir nehmen alles, was wir noch nicht haben (basierend auf ID)
-        let changed = false;
-        const currentIds = new Set(protocols.map(p => p.id));
-
-        incomingData.forEach(item => {
-            if(!currentIds.has(item.id)) {
-                protocols.push(item);
-                changed = true;
-            }
-        });
-
-        if(changed) {
-            // Sortieren nach Datum (neu oben)
-            protocols.sort((a, b) => new Date(b.date) - new Date(a.date));
-            saveAndRender();
-            alert("NEUE DATEN VOM NETZWERK EMPFANGEN.");
-        }
     }
 </script>
 
