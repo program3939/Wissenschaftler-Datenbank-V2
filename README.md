@@ -1,46 +1,23 @@
-# SCP FOUNDATION // UNETHICAL SCIENTIST DATABASE
+# 📂 SCP Site-07 // Secure Research Database
 
-**SICHERHEITSHINWEIS:** ZUGRIFF AUSSCHLIESSLICH FÜR PERSONAL MIT SICHERHEITSFREIGABE STUFE 4.
-UNBEFUGTER ZUGRIFF AKTIVIERT DAS MEMETISCHE TÖTUNGSPROTOKOLL „BERRYMAN-LANGFORD“.
-DR. RER. NAT. JULIUS XELVAR (GRÜNDER) UND [REDACTED] (ERBTRÄGER) SIND MIT DER SICHERUNG VON [REDACTED] BEAUFTRAGT.
-DIE KLASSIFIZIERUNG DIESER DATENBANK IST UNABHÄNGIG VON DER SCP FOUNDATION.
+# 🏛 Teil 1: Lore (In-Character / RP)
+PROJEKT: XELVAR-VERMÄCHTNIS
+Status: Aktiv / Dezentralisiert Sicherheitsfreigabe: O5-Level-Verschlüsselung (Override erforderlich)
 
----
+**Die Entstehung**
+Die Datenbank wurde aus Blut und Misstrauen geboren. Gegründet von Dr. rer. nat. Julius Xelvar, einem Mann, der den offiziellen Berichten der Ethikkommission niemals traute. Als sein Bruder Julian Xelvar unter mysteriösen Umständen starb, lautete das Urteil: "Autounfall" - kurz bevor er etwas präsentieren wollte anscheinennd eine Testidee namens "DOminion-682" worin es geht SCP-682 zu bändigen. Doch Julian besaß keinen Führerschein und die strengen Ausgangssperren der Site machten eine private Fahrt unmöglich.
 
-## ÜBERSICHT
-Dieses Terminal dient zur Erfassung und Synchronisation von Testprotokollen unethischer Experimente. Es handelt sich um eine dezentrale Web-Applikation, die ohne zentralen Server auskommt und Daten direkt zwischen Terminals überträgt, um maximalen Fortschritt durch Wissenschaft zu fördern.
+Julius wusste: Sein Bruder wurde hingerichtet oder entführt. War es eine Information, die er nicht hören durfte? Ein Dokument, das er nicht sehen sollte? Julius schwor sich, dass das Wissen der Foundation niemals im Schatten sterben darf. Er schuf dieses Terminal, um jegliche Forschungsergebnisse, Anomalien und Geheimnisse festzuhalten – damit das Schweigen der Toten den Unterdrückern nichts mehr bringt.
 
-## 🛠 FEATURES
-* **CRT-Interface:** Authentisches Terminal-Design mit Scanline-Effekten.
-* **Anonymisierungs-Protokoll:** Automatische Schwärzung von Wissenschaftler-Namen (`[REDACTED]`).
-* **P2P-Synchronisation:** Echtzeit-Datenaustausch via WebRTC (PeerJS).
-* **LocalStorage-Persistenz:** Protokolle werden lokal im Browser gespeichert und bleiben nach dem Schließen der Seite erhalten.
+**Die Vision**
+Xelvar brach mit dem starren Freigabesystem. Er integrierte ein zentralisiertes Klassensystem, das Wissen nach Relevanz und Befugnis verteilt, statt nach Dienstgrad. In Xelvars Vision kann selbst eine Reinigungskraft zum Wissensträger werden, wenn es die Wahrheit erfordert.
 
----
+**Das Erbe & Der Verfall**
+Nach Julius' Tod wurde der Quellcode auf einem USB-Stick an seinen Sohn Joel Xelvar vererbt. Die Erbtradition blieb über Generationen stabil, bis Joel das Kind Elvas Rothring adoptierte. Elvas beging den ultimativen Fehler: Er war unvorsichtig. Er gab den USB-Stick an sein Adoptivkind Alvore Libertat weiter, doch im Chaos der Site-07 gelangten Kopien des HTML-Codes in die Hände unbefugter Wissenschaftler.
 
-## 📡 SYNC-ANLEITUNG (P2P-MODUS)
-Um Daten mit einem anderen Wissenschaftler zu teilen, folge diesen Schritten:
+**Warnung:** Die Datenbank ist nun fragmentiert. Mehrere Kopien existieren im Umlauf. Das Erbe der Xelvars ist in Gefahr, enthüllt oder korrumpiert zu werden.
 
-1.  **Terminal öffnen:** Beide Nutzer müssen die Website im Browser laden oder ohne WLAN sie per "index.html" starten.
-2.  **ID kopieren:** Nutzer A kopiert seine individuelle ID unter dem Feld **"DEINE ID"**.
-3.  **Verbindung:** Nutzer B fügt die ID von Nutzer A in das Feld **"PARTNER ID EINGEBEN"** ein und klickt auf **"VERBINDUNG HERSTELLEN"**.
-4.  **Status-Check:** Sobald der Status auf grün **"NETZWERK AKTIV"** springt, werden alle neu erstellten Protokolle sofort an das verbundene Terminal gesendet.
+# Teil 2: OOC / Technisches
 
-> **HINWEIS:** Da dies eine reine Peer-to-Peer Verbindung ist, findet keine dauerhafte Speicherung in einer Cloud statt. Daten werden nur übertragen, wenn beide Terminals gleichzeitig online sind.
-
----
-
-## 💾 DATENSPEICHERUNG
-Die Datenbank nutzt den **LocalStorage** deines Browsers. 
-* **Vorteil:** Deine Daten verlassen deinen PC nicht, außer du verbindest dich aktiv mit einem Partner.
-* **Warnung:** Wenn du deinen Browser-Cache löschst oder "Webseitendaten entfernst", wird auch die Datenbank gelöscht.
-
----
-
-## ⚠️ TECHNISCHE SPEZIFIKATIONEN
-* **Protokoll:** WebRTC (via PeerJS Cloud für Signaling)
-* **Frontend:** HTML5 / CSS3 / Vanilla JavaScript
-* **Sicherheit:** Keine Verschlüsselung im LocalStorage (physischer Zugriff auf PC = Zugriff auf Daten).
-
----
-**[STRENG GEHEIM]** // SECURE. CONTAIN. PROTECT.
+-> Bitte keine Sensiblen Daten hochladen.
+-> Die Website an sich ist sicher, aber die Leute können posten, was sie wollen, also das gleiche Prinzip wie bei Discord und co.
