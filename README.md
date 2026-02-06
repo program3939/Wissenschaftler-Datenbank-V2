@@ -2,7 +2,8 @@
 
 # 🏛 Teil 1: Lore (In-Character / RP)
 PROJEKT: XELVAR-VERMÄCHTNIS
-Status: Aktiv / Dezentralisiert Sicherheitsfreigabe: O5-Level-Verschlüsselung (Override erforderlich)
+Status: Aktiv / Dezentralisiert 
+Sicherheitsfreigabe: Level-3 (Nach Xelvar-Klassenprinzip: 4)
 
 **Die Entstehung**
 Die Datenbank wurde aus Blut und Misstrauen geboren. Gegründet von Dr. rer. nat. Julius Xelvar, einem Mann, der den offiziellen Berichten der Ethikkommission niemals traute. Als sein Bruder Julian Xelvar unter mysteriösen Umständen starb, lautete das Urteil: "Autounfall" - kurz bevor er etwas präsentieren wollte anscheinennd eine Testidee namens "DOminion-682" worin es geht SCP-682 zu bändigen. Doch Julian besaß keinen Führerschein und die strengen Ausgangssperren der Site machten eine private Fahrt unmöglich.
