@@ -3,33 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SITE-07 // SECURE DATABASE</title>
+    <title>SITE-07 // SECURE MAINFRAME</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
         :root {
-            /* --- COLORS --- */
-            --red: #ff0000;
-            --dim-red: #4a0000;
-            --bg: #050505;
-            --panel-bg: rgba(10, 0, 0, 0.95);
-            --link-color: #00ff00;
-            --border-color: #ff3333;
-            
-            /* DEIN WUNSCH: PURES GELB FÜR EDIT */
+            --primary: #ff0000;
+            --primary-dim: #4a0000;
+            --bg-deep: #020202;
+            --panel-bg: rgba(10, 0, 0, 0.92); 
             --edit-color: #ffe600; 
-            --user-edit: #00aaff;
-            
-            --glow: 0 0 20px rgba(255, 0, 0, 0.2);
+            --success-color: #00ff00;
+            --grid-color: rgba(255, 0, 0, 0.15);
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; cursor: crosshair; }
+        ::selection { background: var(--primary); color: black; text-shadow: none; }
 
         body {
-            background-color: var(--bg);
-            color: var(--red);
+            background-color: var(--bg-deep);
+            color: var(--primary);
             font-family: 'Share Tech Mono', monospace;
             margin: 0; padding: 0;
             height: 100vh;
@@ -37,273 +32,383 @@
             text-transform: uppercase;
             overflow: hidden;
             user-select: none;
+            perspective: 1000px; 
         }
 
-        body::before {
-            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 900; background-size: 100% 2px, 3px 100%; pointer-events: none;
+        /* --- VISUAL FX --- */
+        .bg-grid {
+            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: 
+                linear-gradient(transparent 0%, var(--bg-deep) 100%),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px),
+                linear-gradient(0deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg);
+            animation: gridMove 20s linear infinite;
+            z-index: 0; pointer-events: none; opacity: 0.6;
+        }
+        @keyframes gridMove { 0% { transform: perspective(500px) rotateX(60deg) translateY(0); } 100% { transform: perspective(500px) rotateX(60deg) translateY(40px); } }
+
+        .overlay-fx {
+            position: absolute; inset: 0; pointer-events: none; z-index: 900;
+            background: radial-gradient(circle, transparent 60%, black 100%);
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
+        }
+        .overlay-fx::before {
+            content: ""; position: absolute; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            opacity: 0.4; pointer-events: none;
         }
 
-        /* --- MAIN INTERFACE --- */
+        .scanline-bar {
+            position: absolute; top: 0; left: 0; width: 100%; height: 5px;
+            background: rgba(255, 0, 0, 0.3);
+            opacity: 0.6; animation: scanMove 6s linear infinite;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); z-index: 901; pointer-events: none;
+        }
+        @keyframes scanMove { 0% { top: -10%; } 100% { top: 110%; } }
+
+        /* --- LOGIN --- */
+        #login-screen { position: absolute; inset: 0; background: #000; z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .radar-spinner {
+            width: 100px; height: 100px; border: 2px solid var(--primary);
+            position: absolute; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            animation: spin 4s linear infinite; margin-bottom: 250px; opacity: 0.5;
+        }
+        .radar-spinner::after {
+            content:''; position: absolute; inset: 5px; border: 1px dashed var(--primary);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            animation: spin 4s linear infinite reverse;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .login-box { 
+            border: 1px solid var(--primary); padding: 40px; width: 450px; 
+            background: rgba(10, 0, 0, 0.95); backdrop-filter: blur(10px);
+            box-shadow: 0 0 50px rgba(255,0,0,0.2); position: relative; z-index: 2;
+        }
+        .login-box::before { content: ""; position: absolute; top: -2px; left: -2px; width: 20px; height: 20px; border-top: 4px solid var(--primary); border-left: 4px solid var(--primary); }
+        .login-box::after { content: ""; position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; border-bottom: 4px solid var(--primary); border-right: 4px solid var(--primary); }
+
+        .login-input { 
+            width: 100%; background: rgba(255,0,0,0.05); border: none; border-bottom: 1px solid #333; 
+            color: var(--primary); padding: 15px; margin: 15px 0; font-family: 'Share Tech Mono'; 
+            font-size: 1.2rem; min-height: 50px; display: flex; align-items: center; 
+        }
+
+        /* --- INTERFACE --- */
         #interface {
-            width: 95vw; height: 90vh;
-            border: 2px solid var(--border-color);
-            display: grid; 
-            grid-template-rows: 60px 1fr 30px; 
-            box-shadow: var(--glow);
-            position: relative; z-index: 10;
-            background: var(--panel-bg);
-            transition: all 0.5s;
+            width: 96vw; height: 92vh; border: 1px solid var(--primary-dim);
+            display: grid; grid-template-rows: 70px 1fr 40px; 
+            box-shadow: 0 0 30px rgba(0,0,0,0.8); position: relative; z-index: 10;
+            background: var(--panel-bg); backdrop-filter: blur(5px);
+            transition: all 0.5s; opacity: 0; transform: scale(0.95);
         }
+        #interface.active { opacity: 1; transform: scale(1); }
+        
+        .hud-corner { position: absolute; width: 30px; height: 30px; border: 2px solid var(--primary); pointer-events: none; }
+        .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+        .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+        .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
 
-        .admin-mode {
-            box-shadow: 0 0 60px rgba(255, 0, 0, 0.4) !important;
-            border-color: #ff0000 !important;
-        }
-        .admin-mode header { background: rgba(80, 0, 0, 0.8) !important; }
-
-        header {
-            border-bottom: 2px solid var(--border-color);
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 25px; font-size: 1.2rem; letter-spacing: 2px;
-            background: rgba(30, 0, 0, 0.3);
-        }
-        .strike { text-decoration: line-through; text-decoration-thickness: 3px; opacity: 0.8; }
-        .sub-header { font-size: 0.7rem; text-align: right; line-height: 1.2; opacity: 0.8; }
-
-        main { display: grid; grid-template-columns: 350px 1fr; overflow: hidden; min-height: 0; }
-
-        /* --- SIDEBAR --- */
-        .sidebar {
-            border-right: 2px solid var(--border-color);
-            padding: 20px; overflow-y: auto;
-            display: flex; flex-direction: column; gap: 15px;
-            background: rgba(0, 0, 0, 0.6);
-            transition: border-right 0.3s;
+        header { 
+            border-bottom: 1px solid var(--primary-dim); display: flex; justify-content: space-between; 
+            align-items: center; padding: 0 30px; font-size: 1.4rem; letter-spacing: 2px;
+            background: linear-gradient(90deg, rgba(20,0,0,0.8) 0%, transparent 100%);
         }
         
-        /* Edit Mode Styles */
-        .sidebar.editing { background: rgba(40, 30, 0, 0.8); border-right: 4px solid var(--edit-color); }
-        .sidebar.user-editing { background: rgba(0, 20, 40, 0.8); border-right: 4px solid var(--user-edit); }
+        .glitch { position: relative; }
+        .glitch::before, .glitch::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-deep);
+        }
+        .glitch::before { left: 2px; text-shadow: -1px 0 #00ffea; clip: rect(24px, 550px, 90px, 0); animation: glitch-anim-1 2.5s infinite linear alternate-reverse; }
+        .glitch::after { left: -2px; text-shadow: -1px 0 #ff00ea; clip: rect(85px, 550px, 140px, 0); animation: glitch-anim-2 3s infinite linear alternate-reverse; }
+        @keyframes glitch-anim-1 { 0% { clip: rect(10px, 9999px, 30px, 0); } 20% { clip: rect(80px, 9999px, 100px, 0); } 100% { clip: rect(20px, 9999px, 60px, 0); } }
+        @keyframes glitch-anim-2 { 0% { clip: rect(60px, 9999px, 80px, 0); } 20% { clip: rect(10px, 9999px, 40px, 0); } 100% { clip: rect(120px, 9999px, 140px, 0); } }
 
-        h3 { margin: 0; border-bottom: 2px solid var(--red); padding-bottom: 5px; font-size: 1rem; }
-
-        .input-group label { display: block; font-size: 0.7rem; margin-bottom: 5px; opacity: 0.7; letter-spacing: 1px; }
+        main { display: grid; grid-template-columns: 380px 1fr; overflow: hidden; min-height: 0; }
         
-        input, select, textarea {
-            width: 100%; background: #080000; border: 1px solid var(--dim-red);
-            color: var(--red); padding: 10px; font-family: inherit; font-size: 0.9rem; outline: none;
-            transition: 0.3s;
+        .sidebar { 
+            border-right: 1px solid var(--primary-dim); padding: 25px; 
+            overflow-y: auto; display: flex; flex-direction: column; gap: 20px; 
+            background: rgba(0, 0, 0, 0.4); 
+        }
+        .sidebar.editing { border-right: 3px solid var(--edit-color); background: rgba(50, 40, 0, 0.3); }
+
+        h3 { margin: 0; padding-bottom: 5px; font-size: 1.1rem; border-bottom: 1px solid var(--primary); display: inline-block; width: 100%; text-shadow: 0 0 10px var(--primary); }
+        
+        .input-group label { display: block; font-size: 0.7rem; margin-bottom: 4px; opacity: 0.8; letter-spacing: 1px; }
+        
+        input, select, textarea { 
+            width: 100%; background: rgba(0,0,0,0.6); border: none; border-left: 2px solid var(--primary-dim);
+            color: var(--primary); padding: 12px; font-family: inherit; font-size: 0.9rem; outline: none; 
+            transition: all 0.3s; clip-path: polygon(0 0, 100% 0, 100% 90%, 95% 100%, 0 100%);
         }
         input:focus, select:focus, textarea:focus { 
-            border-color: var(--red); 
-            box-shadow: 0 0 10px rgba(255,0,0,0.3); 
-            background: #150000; 
+            border-left: 4px solid var(--primary); background: rgba(20, 0, 0, 0.8);
+            box-shadow: 10px 0 20px -10px var(--primary); padding-left: 18px;
         }
-        input:disabled { opacity: 0.5; cursor: not-allowed; border-color: #333; color: #666; background: #000; }
-
-        /* --- BUTTONS --- */
-        .btn-action {
-            width: 100%; padding: 12px; background: var(--dim-red);
-            border: 1px solid var(--red); color: var(--red);
-            font-family: inherit; font-weight: bold; cursor: pointer;
-            text-transform: uppercase; margin-top: 10px; transition: all 0.2s;
-            letter-spacing: 1px; position: relative; overflow: hidden;
-        }
-        .btn-action:hover { background: var(--red); color: black; box-shadow: 0 0 15px var(--red); }
-        .btn-action:active { transform: scale(0.98); }
-
-        /* GELBER EDIT BUTTON */
-        .btn-edit-mode {
-            background: #332b00 !important;
-            border-color: var(--edit-color) !important;
-            color: var(--edit-color) !important;
-            box-shadow: 0 0 10px rgba(255, 230, 0, 0.2);
-        }
-        .btn-edit-mode:hover {
-            background: var(--edit-color) !important;
-            color: black !important;
-            box-shadow: 0 0 20px var(--edit-color) !important;
+        
+        input:disabled { opacity: 0.3; cursor: not-allowed; border-left-color: #333; color: #666; pointer-events: none; }
+        input.admin-unlocked { 
+            border-left: 4px solid var(--edit-color) !important; color: var(--edit-color) !important; 
+            background: rgba(40, 30, 0, 0.4) !important; pointer-events: auto !important;
+            box-shadow: 0 0 15px rgba(255, 230, 0, 0.1);
         }
 
-        .btn-cancel {
-            background: transparent; border: 1px solid #666; color: #888; margin-top: 5px; padding: 8px; font-size: 0.8rem;
+        .btn-action { 
+            width: 100%; padding: 15px; background: var(--primary-dim); border: none;
+            color: #fff; font-weight: bold; font-family: inherit; text-transform: uppercase; margin-top: 15px;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            transition: all 0.2s; letter-spacing: 2px; cursor: pointer; position: relative; overflow: hidden;
         }
-        .btn-cancel:hover { border-color: #fff; color: #fff; }
+        .btn-action::before {
+            content: ""; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); transition: 0.5s;
+        }
+        .btn-action:hover { background: var(--primary); color: black; box-shadow: 0 0 20px var(--primary); }
+        .btn-action:hover::before { left: 100%; }
 
-        /* --- TABLE --- */
-        .content-area { 
-            display: flex; flex-direction: column; overflow: hidden; 
-            background: rgba(10, 5, 5, 0.4); position: relative;
+        .btn-edit-mode { background: #554400 !important; color: var(--edit-color) !important; }
+        .btn-cancel { background: transparent; border: 1px solid #666; color: #888; clip-path: none; padding: 8px; font-size: 0.8rem; }
+        .btn-cancel:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,0.1); }
+        
+        .btn-logout { 
+            background: transparent; border: 1px solid var(--primary); color: var(--primary); 
+            padding: 5px 15px; font-family: inherit; font-weight: bold; cursor: pointer; 
+            text-transform: uppercase; font-size: 0.7rem; 
         }
-        .grid-row {
-            display: grid;
-            grid-template-columns: 0.8fr 0.6fr 0.6fr 1fr 1fr 1.5fr 80px; 
-            gap: 1px; background: var(--dim-red);
-        }
-        .grid-row > div { background: var(--panel-bg); padding: 10px; word-break: break-word; overflow: hidden; }
-        .tbl-head { font-weight: bold; font-size: 0.8rem; flex-shrink: 0; border-bottom: 2px solid var(--red); }
-        .tbl-head > div { background: #1a0000; }
+        .btn-logout:hover { background: var(--primary); color: black; box-shadow: 0 0 10px var(--primary); }
+
+        .content-area { display: flex; flex-direction: column; overflow: hidden; background: rgba(5, 5, 5, 0.3); }
+        .grid-row { display: grid; grid-template-columns: 0.8fr 0.6fr 0.6fr 1fr 1fr 1.2fr 130px; gap: 2px; border-bottom: 1px solid rgba(255,0,0,0.1); }
+        .grid-row > div { padding: 12px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        
+        .tbl-head { font-weight: bold; background: rgba(30, 0, 0, 0.8); border-bottom: 2px solid var(--primary); }
         .tbl-body { overflow-y: scroll; flex-grow: 1; }
-        .tbl-row { font-size: 0.85rem; border-bottom: 1px solid #220000; transition: background 0.2s; }
-        .tbl-row:hover > div { background: rgba(255, 0, 0, 0.1); }
-        
-        /* Highlight Row Style */
-        .tbl-row.editing-row > div { background: rgba(255, 230, 0, 0.15) !important; color: var(--edit-color); border-bottom: 1px solid var(--edit-color); }
-        .tbl-row.user-editing-row > div { background: rgba(0, 170, 255, 0.15) !important; color: var(--user-edit); }
+        .tbl-row:nth-child(even) { background: rgba(255,0,0,0.02); }
+        .tbl-row:hover { background: rgba(255, 0, 0, 0.15); transform: translateX(5px); border-left: 2px solid var(--primary); opacity: 1; }
+        .tbl-row.editing-row { background: rgba(255, 230, 0, 0.1) !important; border-left: 2px solid var(--edit-color); color: var(--edit-color); }
 
-        /* Icon Buttons */
-        .btn-icon {
-            border: 1px solid; background: transparent;
-            cursor: pointer; font-size: 0.7rem; padding: 2px 5px; margin: 0 2px;
-            text-align: center; opacity: 0.7; transition: 0.2s; display: inline-block;
+        .class-keter { color: #ff3333; text-shadow: 0 0 10px #ff0000; } 
+        .class-safe { color: #33ff33; text-shadow: 0 0 10px #00ff00; }
+        .class-euclid { color: #ffff33; text-shadow: 0 0 10px #ffff00; } 
+        .class-thaumiel { color: #3333ff; text-shadow: 0 0 10px #0000ff; }
+
+        .btn-doc { 
+            color: var(--success-color); border: 1px solid var(--success-color); 
+            width: 100%; background: rgba(0,255,0,0.05); padding: 5px; font-size: 0.7rem; 
+            cursor: pointer; transition: 0.3s;
         }
-        .btn-del { color: var(--red); border-color: var(--red); }
-        .btn-del:hover { background: var(--red); color: black; opacity: 1; }
-        
-        .btn-edit { color: var(--edit-color); border-color: var(--edit-color); }
-        .btn-edit:hover { background: var(--edit-color); color: black; opacity: 1; }
-        
-        .btn-user-edit { color: var(--user-edit); border-color: var(--user-edit); }
-        .btn-user-edit:hover { background: var(--user-edit); color: black; opacity: 1; }
+        .btn-doc:hover { background: var(--success-color); color: black; box-shadow: 0 0 15px var(--success-color); }
 
-        footer {
-            border-top: 2px solid var(--red);
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 25px; font-size: 0.8rem; background: #020000;
+        .cmd-group { display: flex; gap: 5px; justify-content: center; }
+        .btn-cmd { font-size: 0.7rem; padding: 4px 10px; cursor: pointer; font-weight: bold; transition: 0.2s; border: 1px solid; }
+        .btn-edit { background: rgba(255, 230, 0, 0.1); border-color: var(--edit-color); color: var(--edit-color); }
+        .btn-edit:hover { background: var(--edit-color); color: black; box-shadow: 0 0 15px var(--edit-color); }
+        .btn-del { background: rgba(255, 0, 0, 0.2); border-color: var(--primary); color: var(--primary); }
+        .btn-del:hover { background: var(--primary); color: black; box-shadow: 0 0 15px var(--primary); }
+
+        footer { border-top: 1px solid var(--primary-dim); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; font-size: 0.8rem; background: rgba(0,0,0,0.8); }
+        .status-light { display: inline-block; width: 8px; height: 8px; background: var(--success-color); border-radius: 50%; animation: blinkLight 2s infinite; margin-right: 8px; box-shadow: 0 0 5px var(--success-color); }
+        @keyframes blinkLight { 50% { opacity: 0.3; } }
+
+        /* --- MODALS --- */
+        .modal-base { position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 8000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .modal-box { 
+            border: 2px solid var(--primary); background: #050505; padding: 2px; width: 0; height: 2px; overflow: hidden; 
+            animation: unfold 0.6s forwards ease-in-out; display: flex; flex-direction: column; 
+            box-shadow: 0 0 50px rgba(255,0,0,0.3);
+        }
+        @keyframes unfold {
+            0% { width: 0; height: 2px; }
+            50% { width: 600px; height: 2px; }
+            100% { width: 600px; height: 500px; }
+        }
+        .confirm-box { width: 400px !important; height: auto !important; animation: unfoldConfirm 0.4s forwards !important; padding: 30px; text-align: center; }
+        @keyframes unfoldConfirm { 0% { transform: scaleY(0); } 100% { transform: scaleY(1); } }
+
+        .doc-paper { width: 100%; height: 100%; display: flex; flex-direction: column; }
+        .doc-header { background: var(--primary); color: black; padding: 10px 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .doc-content { flex: 1; padding: 20px; overflow-y: auto; color: #ffcccc; line-height: 1.6; white-space: pre-wrap; }
+        .doc-link { 
+            color: var(--success-color); text-decoration: none; border-bottom: 1px dashed var(--success-color);
+            cursor: pointer !important; pointer-events: auto !important; position: relative; z-index: 10000;
+        }
+        .doc-link:hover { background: var(--success-color); color: black; }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: var(--primary); box-shadow: 0 0 5px var(--primary); }
+        
+        #success-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: var(--success-color); z-index: 9000; display: none; align-items: center; justify-content: center; font-size: 1.5rem; color: black; font-weight: bold; }
+        @keyframes successFlash { 0% { height: 0; } 20% { height: 60px; } 80% { height: 60px; opacity: 1; } 100% { height: 0; opacity: 0; } }
+
+        /* --- MAXIMALIST ADMIN ANIMATION --- */
+        #admin-overlay { 
+            position: absolute; inset: 0; background: black; z-index: 6000; display: none; 
+            flex-direction: column; justify-content: center; align-items: center; 
+            overflow: hidden;
+        }
+        
+        .admin-shake { animation: shakeScreen 0.1s infinite; }
+        @keyframes shakeScreen { 0% { transform: translate(1px, 1px); } 100% { transform: translate(-1px, -1px); } }
+
+        .admin-alert-bg {
+            position: absolute; inset: 0; background: repeating-linear-gradient(45deg, #220000, #220000 10px, #000 10px, #000 20px);
+            opacity: 0.3; animation: flashAlert 0.2s infinite; pointer-events: none;
+        }
+        @keyframes flashAlert { 0% { opacity: 0.1; } 50% { opacity: 0.4; filter: invert(1); } 100% { opacity: 0.1; } }
+
+        .admin-big-text {
+            font-size: 5rem; color: red; font-weight: bold; text-shadow: 0 0 30px red;
+            z-index: 2; animation: zoomText 0.5s forwards; letter-spacing: 10px;
+        }
+        @keyframes zoomText { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        .admin-matrix {
+            position: absolute; color: #0f0; font-family: monospace; font-size: 1rem; opacity: 0.3;
+            width: 100%; height: 100%; word-break: break-all; overflow: hidden;
         }
 
-        /* --- ERROR OVERLAY (ANIMATED) --- */
-        #error-screen {
-            position: absolute; inset: 0; 
-            background: rgba(20, 0, 0, 0.95);
-            z-index: 3000;
-            display: none; /* Hidden by default */
-            flex-direction: column; justify-content: center; align-items: center;
-            border: 4px solid red;
-            box-shadow: inset 0 0 50px red;
-            backdrop-filter: blur(5px);
-            animation: shake 0.5s ease-in-out;
-        }
+        .admin-mode { border-color: red !important; box-shadow: 0 0 50px rgba(255, 0, 0, 0.4) !important; }
         
-        .err-box {
-            text-align: center; border: 2px solid red; padding: 30px; background: black;
-            box-shadow: 0 0 30px red; max-width: 80%;
-        }
-        
-        .err-title { font-size: 2rem; color: red; font-weight: bold; margin-bottom: 10px; animation: blink 0.2s infinite; }
-        .err-msg { font-size: 1rem; color: white; margin-bottom: 20px; font-family: 'Share Tech Mono'; line-height: 1.4; }
-        
-        .btn-dismiss {
-            background: red; color: black; border: none; padding: 10px 30px; 
-            font-size: 1rem; font-weight: bold; cursor: pointer; text-transform: uppercase;
-        }
-        .btn-dismiss:hover { background: white; box-shadow: 0 0 15px white; }
-
-        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-
-        /* --- MOBILE --- */
-        @media (max-width: 900px) {
-            #interface { width: 100vw; height: 100vh; border: none; }
-            main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-            .sidebar { border-right: none; border-bottom: 2px solid var(--red); max-height: 40vh; }
-            .grid-row { min-width: 800px; } 
-            .content-area { overflow-x: auto; }
-        }
-
-        .doc-link { color: var(--link-color); border-bottom: 1px dashed var(--link-color); text-decoration: none; font-size: 0.75rem; }
-        .doc-link:hover { background: var(--link-color); color: black; }
-        .deleting { animation: flashDelete 0.5s forwards; pointer-events: none; }
-        @keyframes flashDelete { 0% { background: red; opacity: 1; } 100% { height: 0; opacity: 0; padding: 0; } }
-
-        /* Loader */
-        #loading-overlay { position: absolute; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .loader-bar { width: 300px; height: 4px; background: #333; margin-top: 20px; position: relative; }
-        .loader-progress { width: 0%; height: 100%; background: var(--red); box-shadow: 0 0 10px var(--red); transition: width 0.3s; }
     </style>
 </head>
 <body>
 
-<div id="error-screen">
-    <div class="err-box">
-        <div class="err-title">FATAL EXCEPTION</div>
-        <div class="err-msg" id="error-text">UNKNOWN ERROR OCCURRED</div>
-        <button class="btn-dismiss" onclick="dismissError()">ACKNOWLEDGE</button>
+<div class="bg-grid"></div>
+<div class="overlay-fx"></div>
+<div class="scanline-bar"></div>
+
+<div id="success-overlay">DATA UPLINK ESTABLISHED</div>
+
+<div id="confirm-modal" class="modal-base">
+    <div class="modal-box confirm-box">
+        <div style="font-size: 1.5rem; color: var(--primary); margin-bottom: 20px; border-bottom: 1px solid var(--primary); padding-bottom: 10px;">⚠ CRITICAL WARNING</div>
+        <div style="color:white; margin-bottom: 30px;" id="confirm-msg">CONFIRM ACTION?</div>
+        <div style="display:flex; gap: 20px; justify-content: center;">
+            <button class="btn-action" style="width: auto; background: var(--primary); color:black;" onclick="confirmAction(true)">[ CONFIRM ]</button>
+            <button class="btn-action" style="width: auto; background: transparent; border:1px solid var(--primary);" onclick="confirmAction(false)">[ ABORT ]</button>
+        </div>
     </div>
 </div>
 
-<div id="loading-overlay">
-    <div style="font-size: 2rem; letter-spacing: 5px;">SITE-07</div>
-    <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 10px;">ESTABLISHING SECURE UPLINK...</div>
-    <div class="loader-bar"><div class="loader-progress" id="progress-bar"></div></div>
+<div id="admin-overlay">
+    <div class="admin-alert-bg"></div>
+    <div class="admin-matrix" id="admin-matrix-text"></div>
+    <div class="admin-big-text" id="admin-msg">OVERRIDE</div>
+    <div style="margin-top: 20px; color: yellow; z-index: 2; font-size: 1.2rem; background:black; padding:5px;">AUTHORIZING BIOMETRICS...</div>
+</div>
+
+<div id="error-screen" class="modal-base" style="z-index: 9500;">
+    <div class="modal-box confirm-box" style="border-color: red; box-shadow: 0 0 50px red;">
+        <div style="font-size: 2rem; color: red; animation: blink 0.2s infinite;">FATAL ERROR</div>
+        <div id="error-text" style="margin: 20px 0;">UNKNOWN EXCEPTION</div>
+        <button class="btn-action" onclick="dismissError()">ACKNOWLEDGE</button>
+    </div>
+</div>
+
+<div id="doc-modal" class="modal-base">
+    <div class="modal-box">
+        <div class="doc-paper">
+            <div class="doc-header"><span>SECURE_FILE_VIEWER</span><button class="btn-cancel" style="border:1px solid red; color:red; cursor:pointer;" onclick="closeDoc()">[X]</button></div>
+            <div class="doc-content" id="doc-text-area"></div>
+            <button class="btn-action" style="margin:0; border-top: 1px solid var(--primary);" onclick="closeDoc()">[ CLOSE DOCUMENT ]</button>
+        </div>
+    </div>
+</div>
+
+<div id="login-screen">
+    <div class="radar-spinner"></div>
+    <div id="click-to-start" style="font-size: 1.5rem; animation: blink 1s infinite; z-index: 10;" onclick="startLoginSequence()">
+        [ INITIALIZE UPLINK ]
+    </div>
+    
+    <div id="login-form" style="display:none;" class="login-box">
+        <div style="font-size: 1.8rem; margin-bottom: 30px; text-align: center; letter-spacing: 5px; text-shadow: 0 0 10px red;">SITE-07</div>
+        <div class="input-group">
+            <label>IDENTIFICATION</label><div class="login-input" id="login-user"></div>
+        </div>
+        <div class="input-group">
+            <label>SECURITY_KEY</label><div class="login-input" id="login-pass"></div>
+        </div>
+        <div id="login-status" style="margin-top: 20px; text-align: center; color: var(--success-color); font-weight: bold;"></div>
+    </div>
 </div>
 
 <div id="interface">
+    <div class="hud-corner tl"></div><div class="hud-corner tr"></div>
+    <div class="hud-corner bl"></div><div class="hud-corner br"></div>
+
     <header>
-        <div>DATABASE OF <span class="strike">UNETHICAL</span> SCIENTISTS</div>
-        <div class="sub-header">
-            SITE-07 ARCHIVE<br>CLEARANCE LEVEL 4
-        </div>
+        <div class="glitch" data-text="SITE-07 // DATABASE">SITE-07 // DATABASE</div>
+        <div class="sub-header">SECURE CONNECTION<br>LVL 4 CLEARANCE</div>
     </header>
 
     <main>
         <div class="sidebar" id="sidebarPanel">
-            <h3 id="formTitle">LOG ENTRY PROTOCOL</h3>
+            <h3>LOG ENTRY PROTOCOL</h3>
             
-            <div class="input-group"><label>INCIDENT DATE (LOCKED IN EDIT)</label><input type="date" id="inpDate"></div>
+            <div class="input-group">
+                <label id="lblDate">INCIDENT DATE</label>
+                <input type="date" id="inpDate">
+            </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div class="input-group"><label>SCP ID</label><input type="text" id="inpSCP" placeholder="SCP-XXXX"></div>
                 <div class="input-group">
                     <label>CLASS</label>
                     <select id="inpClass">
-                        <option>SAFE</option><option>EUCLID</option><option>KETER</option><option>THAUMIEL</option><option>PENDING</option>
+                        <option value="SAFE">SAFE</option>
+                        <option value="EUCLID">EUCLID</option>
+                        <option value="KETER">KETER</option>
+                        <option value="THAUMIEL">THAUMIEL</option>
+                        <option value="PENDING">PENDING</option>
                     </select>
                 </div>
             </div>
             
             <div class="input-group">
                 <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" id="chkAnon" style="width: auto; box-shadow:none;"> <span>AUTO-REDACT NAME</span>
+                    <input type="checkbox" id="chkAnon" style="accent-color: var(--primary);"> <span>AUTO-REDACT NAME</span>
                 </label>
                 <input type="text" id="inpScientist" placeholder="RESEARCHER NAME">
             </div>
             
-            <div class="input-group"><label>OPERATION CODENAME</label><input type="text" id="inpTestName"></div>
-            <div class="input-group"><label>LOG DATA (TEXT OR DOCS URL)</label><textarea id="inpProtocol" rows="4"></textarea></div>
+            <div class="input-group"><label>TESTNAME</label><input type="text" id="inpTestName"></div>
+            <div class="input-group"><label>DATA STREAM</label><textarea id="inpProtocol" rows="4"></textarea></div>
             
-            <button class="btn-action" onclick="handleSubmit()" id="btnUpload">ENCRYPT & UPLOAD</button>
-            <button class="btn-action btn-cancel" onclick="resetForm()" id="btnCancel" style="display:none;">ABORT EDIT MODE</button>
+            <button class="btn-action" onclick="handleSubmit()" id="btnUpload">TRANSMIT DATA</button>
+            <button class="btn-action btn-cancel" onclick="resetForm()" id="btnCancel" style="display:none;">TERMINATE EDIT</button>
 
-            <div style="margin-top: auto; padding-top: 15px; border-top: 1px dashed var(--dim-red);">
-                <label style="font-size:0.7rem; opacity:0.6; margin-bottom:5px;">OVERSEER COMMAND LINE</label>
+            <div style="margin-top: auto; padding-top: 15px; border-top: 1px dashed var(--primary-dim);">
+                <label style="font-size:0.7rem; opacity:0.6; margin-bottom:5px;">OVERSEER-KEYL</label>
                 <div style="display: flex; gap: 5px;">
-                    <input type="password" id="ovKey" placeholder="ACCESS KEY">
-                    <button class="btn-action" style="margin:0; width: auto; padding: 10px;" onclick="authO5()">AUTH</button>
+                    <input type="password" id="ovKey" placeholder="O5_ACCESS_KEY" style="clip-path: none;">
+                    <button class="btn-action" style="margin:0; width: auto; padding: 10px; clip-path: none;" onclick="authO5()">AUTH</button>
                 </div>
             </div>
         </div>
 
         <div class="content-area">
             <div class="tbl-head grid-row">
-                <div>DATE</div><div>ID</div><div>CLASS</div><div>TEST</div><div>LEAD</div><div>PROTOCOL</div><div>CMD</div>
+                <div>DATE</div><div>ID</div><div>CLASS</div><div>OP_NAME</div><div>LEAD</div><div>DATA_LINK</div><div>CMD</div>
             </div>
-            <div class="tbl-body" id="tableBody">
-                </div>
+            <div class="tbl-body" id="tableBody"></div>
         </div>
     </main>
 
     <footer>
-        <span id="sys-msg">SYSTEM: ONLINE</span>
-        <span id="clock">00:00:00 BERLIN</span>
+        <div style="display: flex; align-items: center;"><span class="status-light"></span> SYSTEM: ONLINE</div>
+        <button class="btn-logout" onclick="logoutSystem()">[ SYSTEM LOGOUT ]</button>
+        <span id="clock">00:00:00 [BERLIN]</span>
     </footer>
 </div>
 
 <script>
-    // --- CONFIG ---
     const CONFIG = {
         SB_URL: 'https://kvlaqczuwlzbqpurwjul.supabase.co',
         SB_KEY: 'sb_publishable_5lg_Fn4IglBs8kA606CAEg_vZauXp-M',
@@ -314,301 +419,38 @@
     let isO5 = false; 
     let globalData = [];
     let editingId = null;
-
+    let confirmResolver = null;
     let sessionToken = localStorage.getItem('scp_token');
+    
     if (!sessionToken) {
         sessionToken = crypto.randomUUID();
         localStorage.setItem('scp_token', sessionToken);
     }
 
-    // --- ERROR SYSTEM ---
-    function throwError(msg) {
-        const screen = document.getElementById('error-screen');
-        const txt = document.getElementById('error-text');
-        
-        txt.innerHTML = msg; // Allows HTML like <br>
-        screen.style.display = 'flex';
-        
-        // Audio Feedback (Optional, funktioniert nur nach User-Interaktion)
-        // const audio = new Audio('error_sound.mp3'); audio.play().catch(e => {});
+    let audioCtx = null;
+    function initAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    function dismissError() {
-        document.getElementById('error-screen').style.display = 'none';
+    function playBeep(freq = 800, dur = 0.05, type = 'square') {
+        if (!audioCtx) return;
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + dur);
+        } catch(e) {}
     }
 
-    // --- INIT ---
-    async function init() {
-        setInterval(() => {
-            const now = new Date();
-            const time = now.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            document.getElementById('clock').innerText = time + " BERLIN";
-        }, 1000);
-        
-        document.getElementById('inpDate').valueAsDate = new Date();
-        
-        const chk = document.getElementById('chkAnon');
-        const inp = document.getElementById('inpScientist');
-        chk.addEventListener('change', () => {
-            if(chk.checked) { 
-                if(inp.value !== "[REDACTED]") inp.dataset.old = inp.value;
-                inp.value = "[REDACTED]"; inp.disabled = true; 
-            } else { 
-                inp.value = inp.dataset.old || ""; inp.disabled = false; 
-            }
-        });
+    function playAccessSound() { playBeep(400, 0.1, 'sawtooth'); setTimeout(() => playBeep(1200, 0.4, 'sine'), 200); }
 
-        document.getElementById('ovKey').addEventListener('keypress', (e) => {
-            if(e.key === 'Enter') authO5();
-        });
-
-        await runLoader();
-        await loadData();
-    }
-
-    function runLoader() {
-        return new Promise(resolve => {
-            const bar = document.getElementById('progress-bar');
-            bar.style.width = '30%';
-            setTimeout(() => bar.style.width = '70%', 500);
-            setTimeout(() => {
-                bar.style.width = '100%';
-                setTimeout(() => {
-                    document.getElementById('loading-overlay').style.opacity = '0';
-                    setTimeout(() => {
-                        document.getElementById('loading-overlay').style.display = 'none';
-                        resolve();
-                    }, 500);
-                }, 400);
-            }, 1000);
-        });
-    }
-
-    // --- DATABASE ---
-    async function loadData() {
-        const statusEl = document.getElementById('sys-msg');
-        statusEl.innerText = "SYSTEM: SYNCING...";
-        
-        const { data, error } = await sb.from('protocols').select('*').order('id', { ascending: false });
-        
-        if(error) {
-            console.error(error);
-            statusEl.innerText = "ERR: CONNECTION LOST";
-            statusEl.style.color = "red";
-            // Wir zeigen beim Laden keinen Fullscreen Error, das nervt sonst.
-        } else {
-            globalData = data;
-            renderTable(data);
-            if(isO5) {
-                statusEl.innerText = "STATUS: OVERSEER ACTIVE";
-                statusEl.style.color = "red";
-            } else {
-                statusEl.innerText = "STATUS: ONLINE";
-                statusEl.style.color = "var(--red)";
-            }
-        }
-    }
-
-    async function handleSubmit() {
-        const entry = {
-            date: document.getElementById('inpDate').value,
-            scp_id: document.getElementById('inpSCP').value.toUpperCase(),
-            class: document.getElementById('inpClass').value,
-            test_name: document.getElementById('inpTestName').value.toUpperCase(),
-            scientist: document.getElementById('inpScientist').value || "UNKNOWN",
-            protocol_text: document.getElementById('inpProtocol').value,
-            owner_token: sessionToken 
-        };
-
-        if(!entry.scp_id || !entry.test_name) {
-            throwError("PROTOCOL VIOLATION:<br>MISSING SCP-ID OR OPERATION NAME.");
-            return;
-        }
-
-        const btn = document.getElementById('btnUpload');
-        const originalText = btn.innerText;
-        btn.innerText = editingId ? "OVERWRITING..." : "ENCRYPTING...";
-        btn.disabled = true;
-
-        let error = null;
-
-        if (editingId) {
-            const res = await sb.from('protocols').update(entry).eq('id', editingId);
-            error = res.error;
-        } else {
-            const res = await sb.from('protocols').insert([entry]);
-            error = res.error;
-        }
-
-        if(error) {
-            throwError("DATABASE UPLINK FAILED:<br>" + error.message.toUpperCase());
-        } else {
-            resetForm(); 
-            await loadData();
-        }
-        btn.innerText = originalText;
-        btn.disabled = false;
-    }
-
-    async function deleteEntry(id) {
-        if(!confirm("CONFIRM TERMINATION? ACTION IS IRREVERSIBLE.")) return;
-        const row = document.getElementById(`row-${id}`);
-        if(row) row.classList.add('deleting');
-
-        const { error } = await sb.from('protocols').delete().eq('id', id);
-        if(error) {
-            if(row) row.classList.remove('deleting');
-            throwError("TERMINATION FAILED:<br>" + error.message.toUpperCase());
-        } else {
-            setTimeout(loadData, 500);
-        }
-    }
-
-    // --- EDIT LOGIC ---
-    function editEntry(id) {
-        const entry = globalData.find(p => p.id === id);
-        if(!entry) return;
-
-        editingId = id;
-        const dateInput = document.getElementById('inpDate');
-        dateInput.value = entry.date;
-        dateInput.disabled = !isO5; // Only Admin can change date
-
-        document.getElementById('inpSCP').value = entry.scp_id;
-        document.getElementById('inpClass').value = entry.class;
-        document.getElementById('inpTestName').value = entry.test_name;
-        document.getElementById('inpProtocol').value = entry.protocol_text;
-
-        const inpSci = document.getElementById('inpScientist');
-        const chk = document.getElementById('chkAnon');
-        
-        if(entry.scientist === "[REDACTED]") {
-            chk.checked = true; inpSci.value = "[REDACTED]"; inpSci.disabled = true;
-        } else {
-            chk.checked = false; inpSci.value = entry.scientist; inpSci.disabled = false;
-        }
-
-        // Visuals
-        const sidebar = document.getElementById('sidebarPanel');
-        const btn = document.getElementById('btnUpload');
-        
-        document.getElementById('formTitle').innerText = "EDITING RECORD ID: " + id;
-        
-        if (isO5) {
-            document.getElementById('formTitle').style.color = "var(--edit-color)";
-            sidebar.classList.add('editing');
-            btn.classList.add('btn-edit-mode');
-        } else {
-            document.getElementById('formTitle').style.color = "var(--user-edit)";
-            sidebar.classList.add('user-editing');
-            btn.style.background = "var(--user-edit)";
-            btn.style.color = "black";
-            btn.style.borderColor = "var(--user-edit)";
-        }
-
-        btn.innerText = "OVERWRITE RECORD";
-        document.getElementById('btnCancel').style.display = 'block';
-
-        renderTable(globalData);
-    }
-
-    function resetForm() {
-        editingId = null;
-        
-        const dateInp = document.getElementById('inpDate');
-        dateInp.valueAsDate = new Date();
-        dateInp.disabled = false; 
-
-        document.getElementById('inpSCP').value = "";
-        document.getElementById('inpTestName').value = "";
-        document.getElementById('inpProtocol').value = "";
-        
-        const chk = document.getElementById('chkAnon');
-        if(!chk.checked) document.getElementById('inpScientist').value = "";
-
-        document.getElementById('formTitle').innerText = "LOG ENTRY PROTOCOL";
-        document.getElementById('formTitle').style.color = "var(--red)";
-        
-        const sidebar = document.getElementById('sidebarPanel');
-        sidebar.classList.remove('editing');
-        sidebar.classList.remove('user-editing');
-        
-        const btn = document.getElementById('btnUpload');
-        btn.innerText = "ENCRYPT & UPLOAD";
-        btn.classList.remove('btn-edit-mode');
-        btn.style.background = ""; 
-        btn.style.color = "";
-        btn.style.borderColor = "";
-        
-        document.getElementById('btnCancel').style.display = 'none';
-        
-        const rows = document.querySelectorAll('.tbl-row');
-        rows.forEach(r => {
-            r.classList.remove('editing-row');
-            r.classList.remove('user-editing-row');
-        });
-    }
-
-    // --- RENDER ---
-    function escapeHtml(text) {
-        if (!text) return "";
-        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-
-    function formatProtocol(text) {
-        if (!text) return "";
-        let safe = escapeHtml(text);
-        return safe.replace(/(https:\/\/docs\.google\.com\S+)/g, '<a href="$1" target="_blank" class="doc-link">[ACCESS DOCUMENT]</a>');
-    }
-
-    function renderTable(data) {
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = "";
-        
-        data.forEach(row => {
-            const div = document.createElement('div');
-            div.className = 'tbl-row grid-row';
-            div.id = `row-${row.id}`;
-            
-            if(editingId === row.id) {
-                if(isO5) div.classList.add('editing-row');
-                else div.classList.add('user-editing-row');
-            }
-            
-            let color = "inherit";
-            if(row.class === "KETER") color = "#ff4444";
-            if(row.class === "SAFE") color = "#44ff44";
-            if(row.class === "PENDING") color = "#ffaa00";
-
-            const isOwner = row.owner_token && row.owner_token === sessionToken;
-            let cmdContent = `<span style="opacity:0.2">-</span>`;
-            
-            if(isO5) {
-                cmdContent = `
-                    <button class="btn-icon btn-edit" onclick="editEntry(${row.id})">EDIT</button>
-                    <button class="btn-icon btn-del" onclick="deleteEntry(${row.id})">DEL</button>
-                `;
-            } else if (isOwner) {
-                cmdContent = `
-                    <button class="btn-icon btn-user-edit" onclick="editEntry(${row.id})">EDIT</button>
-                    <button class="btn-icon btn-del" onclick="deleteEntry(${row.id})">DEL</button>
-                `;
-            }
-
-            div.innerHTML = `
-                <div>${escapeHtml(row.date)}</div>
-                <div style="font-weight:bold;">${escapeHtml(row.scp_id)}</div>
-                <div style="color:${color}">${escapeHtml(row.class)}</div>
-                <div>${escapeHtml(row.test_name)}</div>
-                <div>${escapeHtml(row.scientist)}</div>
-                <div style="color:#ffcccc; opacity:0.9;">${formatProtocol(row.protocol_text)}</div>
-                <div style="padding:5px; text-align:center;">${cmdContent}</div>
-            `;
-            tbody.appendChild(div);
-        });
-    }
-
-    // --- SECURITY ---
     async function sha256(message) {
         const msgBuffer = new TextEncoder().encode(message);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -617,27 +459,331 @@
     }
 
     async function authO5() {
+        initAudio();
         const input = document.getElementById('ovKey').value.trim();
+        if(!input) return;
         const hash = await sha256(input);
         
         if(hash === CONFIG.ADMIN_HASH) {
-            isO5 = true;
-            document.getElementById('interface').classList.add('admin-mode');
-            document.getElementById('ovKey').value = "";
-            loadData(); 
+            // MAXIMALIST ANIMATION SEQUENCE
+            const overlay = document.getElementById('admin-overlay');
+            const msg = document.getElementById('admin-msg');
+            const matrix = document.getElementById('admin-matrix-text');
+            
+            overlay.style.display = 'flex';
+            document.body.classList.add('admin-shake');
+            
+            // Generate Random Matrix Rain Text
+            let matrixInterval = setInterval(() => {
+                let txt = "";
+                for(let i=0; i<500; i++) txt += Math.random() > 0.5 ? "1 " : "0 ";
+                matrix.innerText = txt;
+                playBeep(200 + Math.random()*800, 0.05, 'sawtooth');
+            }, 100);
+
+            setTimeout(() => {
+                clearInterval(matrixInterval);
+                document.body.classList.remove('admin-shake');
+                overlay.style.display = 'none';
+                isO5 = true;
+                document.getElementById('interface').classList.add('admin-mode');
+                document.getElementById('ovKey').value = "";
+                loadData();
+                playAccessSound();
+            }, 2500);
+
         } else {
-            throwError("SECURITY BREACH DETECTED:<br>INVALID OVERSEER CREDENTIALS");
+            throwError("ACCESS DENIED");
         }
     }
 
-    window.generateNewHash = async function(pwd) {
-        const hash = await sha256(pwd);
-        console.log(`%c PASSWORD: ${pwd} \n HASH: ${hash}`, "color: #0f0; font-size: 14px;");
-        return hash;
+    async function init() {
+        initAudio();
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('de-DE') + " [BERLIN]";
+        }, 1000);
+        document.getElementById('inpDate').valueAsDate = new Date();
+        
+        sb.channel('public:protocols')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'protocols' }, () => {
+            console.log("Change detected");
+            loadData();
+        })
+        .subscribe();
+
+        await loadData();
     }
 
-    init();
-</script>
+    async function loadData() {
+        const { data, error } = await sb.from('protocols').select('*').order('id', { ascending: false });
+        if(!error) {
+            globalData = data;
+            renderTable(data);
+        }
+    }
 
+    async function handleSubmit() {
+        const entry = {
+            scp_id: document.getElementById('inpSCP').value.toUpperCase(),
+            class: document.getElementById('inpClass').value,
+            test_name: document.getElementById('inpTestName').value.toUpperCase(),
+            scientist: document.getElementById('inpScientist').value || "UNKNOWN",
+            protocol_text: document.getElementById('inpProtocol').value
+        };
+
+        const dateInput = document.getElementById('inpDate').value;
+        if(!editingId || isO5) {
+            entry.date = dateInput;
+        } 
+        
+        if(!editingId) { entry.owner_token = sessionToken; }
+
+        if(!entry.scp_id || !entry.test_name) {
+            throwError("MISSING DATA");
+            return;
+        }
+
+        const btn = document.getElementById('btnUpload');
+        btn.innerText = "TRANSMITTING...";
+        btn.disabled = true;
+
+        let res;
+        if (editingId) {
+            res = await sb.from('protocols').update(entry).eq('id', editingId);
+        } else {
+            res = await sb.from('protocols').insert([entry]);
+        }
+
+        if(res.error) {
+            throwError("DB ERROR: " + res.error.message);
+        } else {
+            showSuccess(editingId ? "DATA REWRITTEN" : "UPLOAD COMPLETE");
+            resetForm();
+            await loadData();
+        }
+        btn.innerText = "TRANSMIT DATA";
+        btn.disabled = false;
+    }
+
+    async function deleteEntry(id) {
+        if(await showConfirm("PURGE RECORD?")) {
+            await sb.from('protocols').delete().eq('id', id);
+            showSuccess("PURGED");
+            await loadData();
+        }
+    }
+
+    function editEntry(id) {
+        const entry = globalData.find(p => p.id === id);
+        if(!entry) return;
+
+        editingId = id;
+        const dateInput = document.getElementById('inpDate');
+        const dateLabel = document.getElementById('lblDate');
+        
+        dateInput.value = entry.date;
+        
+        if(isO5) {
+            dateInput.disabled = false;
+            dateInput.classList.add('admin-unlocked');
+            dateLabel.innerText = "DATE [OVERRIDE]";
+            dateLabel.style.color = "var(--edit-color)";
+        } else {
+            dateInput.disabled = true;
+            dateInput.classList.remove('admin-unlocked');
+            dateLabel.innerText = "DATE [LOCKED]";
+            dateLabel.style.color = "var(--primary)";
+        }
+
+        document.getElementById('inpSCP').value = entry.scp_id;
+        document.getElementById('inpClass').value = entry.class;
+        document.getElementById('inpTestName').value = entry.test_name;
+        document.getElementById('inpProtocol').value = entry.protocol_text;
+
+        const sidebar = document.getElementById('sidebarPanel');
+        sidebar.classList.add('editing');
+        document.getElementById('btnUpload').classList.add('btn-edit-mode');
+        document.getElementById('btnUpload').innerText = "REWRITE DATA";
+        document.getElementById('btnCancel').style.display = 'block';
+
+        renderTable(globalData);
+    }
+
+    function resetForm() {
+        editingId = null;
+        const dateInput = document.getElementById('inpDate');
+        
+        dateInput.valueAsDate = new Date();
+        dateInput.disabled = false; 
+        dateInput.classList.remove('admin-unlocked');
+        document.getElementById('lblDate').innerText = "INCIDENT DATE";
+        document.getElementById('lblDate').style.color = "inherit";
+
+        document.getElementById('inpSCP').value = "";
+        document.getElementById('inpTestName').value = "";
+        document.getElementById('inpProtocol').value = "";
+        
+        document.getElementById('sidebarPanel').classList.remove('editing');
+        document.getElementById('btnUpload').classList.remove('btn-edit-mode');
+        document.getElementById('btnUpload').innerText = "TRANSMIT DATA";
+        document.getElementById('btnCancel').style.display = 'none';
+        
+        document.querySelectorAll('.tbl-row').forEach(r => r.classList.remove('editing-row'));
+    }
+
+    function showSuccess(msg) {
+        const ov = document.getElementById('success-overlay');
+        ov.innerText = msg;
+        ov.style.display = 'flex';
+        ov.style.animation = 'none';
+        ov.offsetHeight; 
+        ov.style.animation = 'successFlash 2s forwards';
+        playAccessSound();
+    }
+
+    function showConfirm(msg) {
+        document.getElementById('confirm-msg').innerText = msg;
+        document.getElementById('confirm-modal').style.display = 'flex';
+        playBeep(200, 0.3);
+        return new Promise(resolve => { confirmResolver = resolve; });
+    }
+
+    function confirmAction(res) {
+        document.getElementById('confirm-modal').style.display = 'none';
+        if(confirmResolver) confirmResolver(res);
+    }
+
+    function throwError(msg) {
+        document.getElementById('error-screen').style.display = 'flex';
+        document.getElementById('error-text').innerText = msg;
+        playBeep(100, 0.5);
+    }
+    function dismissError() { document.getElementById('error-screen').style.display = 'none'; }
+
+    function typeText(elementId, text) {
+        return new Promise(resolve => {
+            const el = document.getElementById(elementId);
+            el.innerHTML = "";
+            el.classList.add('cursor');
+            let i = 0;
+            const interval = setInterval(() => {
+                el.innerText += text.charAt(i);
+                playBeep(1000 + Math.random() * 500, 0.02, 'square'); 
+                i++;
+                if (i >= text.length) {
+                    clearInterval(interval);
+                    el.classList.remove('cursor');
+                    resolve();
+                }
+            }, 50 + Math.random() * 30); 
+        });
+    }
+
+    async function startLoginSequence() {
+        initAudio();
+        document.getElementById('click-to-start').style.display = 'none';
+        document.getElementById('login-form').style.display = 'block';
+        
+        await typeText('login-user', 'DR. J. XELVAR');
+        await new Promise(r => setTimeout(r, 200));
+        await typeText('login-pass', '••••••••••••');
+        
+        document.getElementById('login-status').innerText = "ACCESS GRANTED";
+        playAccessSound();
+        
+        setTimeout(() => {
+            document.getElementById('login-screen').style.opacity = 0;
+            setTimeout(() => {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('interface').classList.add('active');
+                init();
+            }, 800);
+        }, 1200);
+    }
+
+    function logoutSystem() {
+        document.getElementById('interface').classList.remove('active');
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('login-screen').style.opacity = 1;
+        isO5 = false;
+        document.getElementById('interface').classList.remove('admin-mode');
+        document.getElementById('login-form').style.display = 'none';
+        document.getElementById('click-to-start').style.display = 'block';
+        playBeep(200, 0.5, 'sawtooth');
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = "";
+        data.forEach(row => {
+            const div = document.createElement('div');
+            div.className = 'tbl-row grid-row';
+            div.id = `row-${row.id}`;
+            if(editingId === row.id) div.classList.add('editing-row');
+            
+            let cc = "";
+            if(row.class === "KETER") cc = "class-keter";
+            if(row.class === "SAFE") cc = "class-safe";
+            if(row.class === "EUCLID") cc = "class-euclid";
+            if(row.class === "THAUMIEL") cc = "class-thaumiel";
+
+            const isOwner = row.owner_token === sessionToken;
+            let acts = `<span style="opacity:0.2">--</span>`;
+            
+            if(isO5 || isOwner) {
+                acts = `
+                    <div class="cmd-group">
+                        <button class="btn-cmd btn-edit" onclick="editEntry(${row.id})">EDIT</button>
+                        <button class="btn-cmd btn-del" onclick="deleteEntry(${row.id})">DEL</button>
+                    </div>
+                `;
+            }
+            
+            div.innerHTML = `
+                <div>${row.date}</div>
+                <div style="font-weight:bold;">${row.scp_id}</div>
+                <div class="${cc}">${row.class}</div>
+                <div>${row.test_name}</div>
+                <div>${row.scientist}</div>
+                <div style="padding:5px;"><button class="btn-doc" onclick="openDoc(${row.id})">[ VIEW ]</button></div>
+                <div style="text-align:center;">${acts}</div>
+            `;
+            tbody.appendChild(div);
+        });
+    }
+
+    function openDoc(id) {
+        const row = globalData.find(d => d.id === id);
+        if(!row) return;
+        
+        const content = row.protocol_text || "NO DATA.";
+        const formatted = escapeHtml(content).replace(
+            /(https:\/\/docs\.google\.com\S+)/g, 
+            '<a href="$1" target="_blank" class="doc-link">[EXTERNAL_LINK]</a>'
+        );
+        
+        document.getElementById('doc-text-area').innerHTML = formatted;
+        document.getElementById('doc-modal').style.display = 'flex';
+    }
+    
+    function closeDoc() { document.getElementById('doc-modal').style.display = 'none'; }
+    function escapeHtml(text) { if (!text) return ""; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+    // --- AUTO REDACT LOGIC ---
+    document.getElementById('chkAnon').addEventListener('change', function(e) {
+        const inp = document.getElementById('inpScientist');
+        if(this.checked) {
+            inp.dataset.realValue = inp.value;
+            inp.value = "[REDACTED]";
+            inp.disabled = true;
+            playBeep(1200, 0.05, 'sawtooth'); // Glitch Sound
+        } else {
+            inp.value = inp.dataset.realValue || "";
+            inp.disabled = false;
+        }
+    });
+
+</script>
 </body>
 </html>
