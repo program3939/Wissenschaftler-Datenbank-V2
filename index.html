@@ -3,18 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="Secure Database Terminal for Site-07. Authorized Personnel Only.">
-    <meta name="theme-color" content="#000000">
-    
     <title>SITE-07 // SECURE DATABASE</title>
-    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
         :root {
-            /* COLOR PALETTE */
+            /* --- COLORS --- */
             --red: #ff0000;
             --dim-red: #4a0000;
             --bg: #050505;
@@ -22,8 +18,10 @@
             --link-color: #00ff00;
             --border-color: #ff3333;
             
-            /* UI VARIABLES */
-            --scanline-color: rgba(255, 0, 0, 0.05);
+            /* DEIN WUNSCH: PURES GELB FÜR EDIT */
+            --edit-color: #ffe600; 
+            --user-edit: #00aaff;
+            
             --glow: 0 0 20px rgba(255, 0, 0, 0.2);
         }
 
@@ -41,7 +39,6 @@
             user-select: none;
         }
 
-        /* --- CRT EFFECTS --- */
         body::before {
             content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
@@ -49,7 +46,7 @@
             z-index: 900; background-size: 100% 2px, 3px 100%; pointer-events: none;
         }
 
-        /* --- LAYOUT CONTAINER --- */
+        /* --- MAIN INTERFACE --- */
         #interface {
             width: 95vw; height: 90vh;
             border: 2px solid var(--border-color);
@@ -58,17 +55,15 @@
             box-shadow: var(--glow);
             position: relative; z-index: 10;
             background: var(--panel-bg);
-            transition: all 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+            transition: all 0.5s;
         }
 
-        /* --- ADMIN MODE OVERRIDE --- */
         .admin-mode {
             box-shadow: 0 0 60px rgba(255, 0, 0, 0.4) !important;
             border-color: #ff0000 !important;
         }
         .admin-mode header { background: rgba(80, 0, 0, 0.8) !important; }
 
-        /* --- HEADER --- */
         header {
             border-bottom: 2px solid var(--border-color);
             display: flex; justify-content: space-between; align-items: center;
@@ -78,18 +73,20 @@
         .strike { text-decoration: line-through; text-decoration-thickness: 3px; opacity: 0.8; }
         .sub-header { font-size: 0.7rem; text-align: right; line-height: 1.2; opacity: 0.8; }
 
-        /* --- MAIN GRID --- */
-        main {
-            display: grid; grid-template-columns: 350px 1fr; overflow: hidden; min-height: 0;
-        }
+        main { display: grid; grid-template-columns: 350px 1fr; overflow: hidden; min-height: 0; }
 
-        /* --- SIDEBAR (INPUTS) --- */
+        /* --- SIDEBAR --- */
         .sidebar {
             border-right: 2px solid var(--border-color);
             padding: 20px; overflow-y: auto;
             display: flex; flex-direction: column; gap: 15px;
             background: rgba(0, 0, 0, 0.6);
+            transition: border-right 0.3s;
         }
+        
+        /* Edit Mode Styles */
+        .sidebar.editing { background: rgba(40, 30, 0, 0.8); border-right: 4px solid var(--edit-color); }
+        .sidebar.user-editing { background: rgba(0, 20, 40, 0.8); border-right: 4px solid var(--user-edit); }
 
         h3 { margin: 0; border-bottom: 2px solid var(--red); padding-bottom: 5px; font-size: 1rem; }
 
@@ -105,6 +102,7 @@
             box-shadow: 0 0 10px rgba(255,0,0,0.3); 
             background: #150000; 
         }
+        input:disabled { opacity: 0.5; cursor: not-allowed; border-color: #333; color: #666; background: #000; }
 
         /* --- BUTTONS --- */
         .btn-action {
@@ -116,82 +114,126 @@
         }
         .btn-action:hover { background: var(--red); color: black; box-shadow: 0 0 15px var(--red); }
         .btn-action:active { transform: scale(0.98); }
-        .btn-action:disabled { opacity: 0.5; cursor: wait; filter: grayscale(1); }
 
-        /* --- DATA TABLE --- */
+        /* GELBER EDIT BUTTON */
+        .btn-edit-mode {
+            background: #332b00 !important;
+            border-color: var(--edit-color) !important;
+            color: var(--edit-color) !important;
+            box-shadow: 0 0 10px rgba(255, 230, 0, 0.2);
+        }
+        .btn-edit-mode:hover {
+            background: var(--edit-color) !important;
+            color: black !important;
+            box-shadow: 0 0 20px var(--edit-color) !important;
+        }
+
+        .btn-cancel {
+            background: transparent; border: 1px solid #666; color: #888; margin-top: 5px; padding: 8px; font-size: 0.8rem;
+        }
+        .btn-cancel:hover { border-color: #fff; color: #fff; }
+
+        /* --- TABLE --- */
         .content-area { 
             display: flex; flex-direction: column; overflow: hidden; 
             background: rgba(10, 5, 5, 0.4); position: relative;
         }
-
-        /* Flexibles Grid für die Tabelle */
         .grid-row {
             display: grid;
-            /* Responsive Grid Def: Date | ID | Class | Test | Lead | Log | Cmd */
-            grid-template-columns: 0.8fr 0.6fr 0.6fr 1fr 1fr 1.5fr 50px;
-            gap: 1px;
-            background: var(--dim-red); /* Gap Color */
+            grid-template-columns: 0.8fr 0.6fr 0.6fr 1fr 1fr 1.5fr 80px; 
+            gap: 1px; background: var(--dim-red);
         }
-        
         .grid-row > div { background: var(--panel-bg); padding: 10px; word-break: break-word; overflow: hidden; }
-
-        .tbl-head {
-            font-weight: bold; font-size: 0.8rem; flex-shrink: 0;
-            border-bottom: 2px solid var(--red);
-        }
+        .tbl-head { font-weight: bold; font-size: 0.8rem; flex-shrink: 0; border-bottom: 2px solid var(--red); }
         .tbl-head > div { background: #1a0000; }
-
         .tbl-body { overflow-y: scroll; flex-grow: 1; }
         .tbl-row { font-size: 0.85rem; border-bottom: 1px solid #220000; transition: background 0.2s; }
         .tbl-row:hover > div { background: rgba(255, 0, 0, 0.1); }
+        
+        /* Highlight Row Style */
+        .tbl-row.editing-row > div { background: rgba(255, 230, 0, 0.15) !important; color: var(--edit-color); border-bottom: 1px solid var(--edit-color); }
+        .tbl-row.user-editing-row > div { background: rgba(0, 170, 255, 0.15) !important; color: var(--user-edit); }
 
-        /* --- DELETE BUTTON --- */
-        .btn-del {
-            border: 1px solid var(--red); background: transparent; color: var(--red);
-            cursor: pointer; font-size: 0.7rem; padding: 4px; width: 100%;
-            text-align: center; opacity: 0.6; transition: 0.2s;
+        /* Icon Buttons */
+        .btn-icon {
+            border: 1px solid; background: transparent;
+            cursor: pointer; font-size: 0.7rem; padding: 2px 5px; margin: 0 2px;
+            text-align: center; opacity: 0.7; transition: 0.2s; display: inline-block;
         }
-        .btn-del:hover { background: var(--red); color: black; opacity: 1; font-weight: bold; }
+        .btn-del { color: var(--red); border-color: var(--red); }
+        .btn-del:hover { background: var(--red); color: black; opacity: 1; }
+        
+        .btn-edit { color: var(--edit-color); border-color: var(--edit-color); }
+        .btn-edit:hover { background: var(--edit-color); color: black; opacity: 1; }
+        
+        .btn-user-edit { color: var(--user-edit); border-color: var(--user-edit); }
+        .btn-user-edit:hover { background: var(--user-edit); color: black; opacity: 1; }
 
-        /* --- FOOTER --- */
         footer {
             border-top: 2px solid var(--red);
             display: flex; justify-content: space-between; align-items: center;
             padding: 0 25px; font-size: 0.8rem; background: #020000;
         }
 
-        /* --- MOBILE RESPONSIVENESS --- */
+        /* --- ERROR OVERLAY (ANIMATED) --- */
+        #error-screen {
+            position: absolute; inset: 0; 
+            background: rgba(20, 0, 0, 0.95);
+            z-index: 3000;
+            display: none; /* Hidden by default */
+            flex-direction: column; justify-content: center; align-items: center;
+            border: 4px solid red;
+            box-shadow: inset 0 0 50px red;
+            backdrop-filter: blur(5px);
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        .err-box {
+            text-align: center; border: 2px solid red; padding: 30px; background: black;
+            box-shadow: 0 0 30px red; max-width: 80%;
+        }
+        
+        .err-title { font-size: 2rem; color: red; font-weight: bold; margin-bottom: 10px; animation: blink 0.2s infinite; }
+        .err-msg { font-size: 1rem; color: white; margin-bottom: 20px; font-family: 'Share Tech Mono'; line-height: 1.4; }
+        
+        .btn-dismiss {
+            background: red; color: black; border: none; padding: 10px 30px; 
+            font-size: 1rem; font-weight: bold; cursor: pointer; text-transform: uppercase;
+        }
+        .btn-dismiss:hover { background: white; box-shadow: 0 0 15px white; }
+
+        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        /* --- MOBILE --- */
         @media (max-width: 900px) {
             #interface { width: 100vw; height: 100vh; border: none; }
             main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
             .sidebar { border-right: none; border-bottom: 2px solid var(--red); max-height: 40vh; }
-            /* Tabelle horizontal scrollbar machen auf Mobile */
             .grid-row { min-width: 800px; } 
             .content-area { overflow-x: auto; }
         }
 
-        /* --- ANIMATIONS & UTILS --- */
         .doc-link { color: var(--link-color); border-bottom: 1px dashed var(--link-color); text-decoration: none; font-size: 0.75rem; }
         .doc-link:hover { background: var(--link-color); color: black; }
-        
         .deleting { animation: flashDelete 0.5s forwards; pointer-events: none; }
         @keyframes flashDelete { 0% { background: red; opacity: 1; } 100% { height: 0; opacity: 0; padding: 0; } }
 
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0a0000; }
-        ::-webkit-scrollbar-thumb { background: var(--dim-red); }
-        ::-webkit-scrollbar-thumb:hover { background: var(--red); }
-
-        /* Loading Overlay */
-        #loading-overlay {
-            position: absolute; inset: 0; background: #000; z-index: 2000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
+        /* Loader */
+        #loading-overlay { position: absolute; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .loader-bar { width: 300px; height: 4px; background: #333; margin-top: 20px; position: relative; }
         .loader-progress { width: 0%; height: 100%; background: var(--red); box-shadow: 0 0 10px var(--red); transition: width 0.3s; }
     </style>
 </head>
 <body>
+
+<div id="error-screen">
+    <div class="err-box">
+        <div class="err-title">FATAL EXCEPTION</div>
+        <div class="err-msg" id="error-text">UNKNOWN ERROR OCCURRED</div>
+        <button class="btn-dismiss" onclick="dismissError()">ACKNOWLEDGE</button>
+    </div>
+</div>
 
 <div id="loading-overlay">
     <div style="font-size: 2rem; letter-spacing: 5px;">SITE-07</div>
@@ -208,10 +250,10 @@
     </header>
 
     <main>
-        <div class="sidebar">
-            <h3>LOG ENTRY PROTOCOL</h3>
+        <div class="sidebar" id="sidebarPanel">
+            <h3 id="formTitle">LOG ENTRY PROTOCOL</h3>
             
-            <div class="input-group"><label>INCIDENT DATE</label><input type="date" id="inpDate"></div>
+            <div class="input-group"><label>INCIDENT DATE (LOCKED IN EDIT)</label><input type="date" id="inpDate"></div>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div class="input-group"><label>SCP ID</label><input type="text" id="inpSCP" placeholder="SCP-XXXX"></div>
@@ -233,7 +275,8 @@
             <div class="input-group"><label>OPERATION CODENAME</label><input type="text" id="inpTestName"></div>
             <div class="input-group"><label>LOG DATA (TEXT OR DOCS URL)</label><textarea id="inpProtocol" rows="4"></textarea></div>
             
-            <button class="btn-action" onclick="uploadData()" id="btnUpload">ENCRYPT & UPLOAD</button>
+            <button class="btn-action" onclick="handleSubmit()" id="btnUpload">ENCRYPT & UPLOAD</button>
+            <button class="btn-action btn-cancel" onclick="resetForm()" id="btnCancel" style="display:none;">ABORT EDIT MODE</button>
 
             <div style="margin-top: auto; padding-top: 15px; border-top: 1px dashed var(--dim-red);">
                 <label style="font-size:0.7rem; opacity:0.6; margin-bottom:5px;">OVERSEER COMMAND LINE</label>
@@ -260,41 +303,50 @@
 </div>
 
 <script>
-    /* ================================================================
-       CONFIGURATION SECTION
-       ================================================================
-    */
+    // --- CONFIG ---
     const CONFIG = {
-        // Deine Supabase Daten
         SB_URL: 'https://kvlaqczuwlzbqpurwjul.supabase.co',
         SB_KEY: 'sb_publishable_5lg_Fn4IglBs8kA606CAEg_vZauXp-M',
-        
-        // Admin Passwort Hash für "1805t.y25"
-        // Um ein neues Passwort zu setzen, öffne die Browser Konsole (F12)
-        // und tippe: generateNewHash("DeinNeuesPasswort")
         ADMIN_HASH: "f30cda4b9eaafab71209fbbbc607f669f7bd9bbde7e88e8401b9c56e9cdf3e7e"
     };
 
-    // Initialize Client
     const sb = supabase.createClient(CONFIG.SB_URL, CONFIG.SB_KEY);
-    let isO5 = false; // Admin State
+    let isO5 = false; 
+    let globalData = [];
+    let editingId = null;
 
-    /* ================================================================
-       SYSTEM INITIALIZATION
-       ================================================================
-    */
+    let sessionToken = localStorage.getItem('scp_token');
+    if (!sessionToken) {
+        sessionToken = crypto.randomUUID();
+        localStorage.setItem('scp_token', sessionToken);
+    }
+
+    // --- ERROR SYSTEM ---
+    function throwError(msg) {
+        const screen = document.getElementById('error-screen');
+        const txt = document.getElementById('error-text');
+        
+        txt.innerHTML = msg; // Allows HTML like <br>
+        screen.style.display = 'flex';
+        
+        // Audio Feedback (Optional, funktioniert nur nach User-Interaktion)
+        // const audio = new Audio('error_sound.mp3'); audio.play().catch(e => {});
+    }
+
+    function dismissError() {
+        document.getElementById('error-screen').style.display = 'none';
+    }
+
+    // --- INIT ---
     async function init() {
-        // 1. Clock Sync (Berlin Time)
         setInterval(() => {
             const now = new Date();
             const time = now.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', second: '2-digit' });
             document.getElementById('clock').innerText = time + " BERLIN";
         }, 1000);
         
-        // 2. Default Date
         document.getElementById('inpDate').valueAsDate = new Date();
         
-        // 3. Anon Checkbox Logic
         const chk = document.getElementById('chkAnon');
         const inp = document.getElementById('inpScientist');
         chk.addEventListener('change', () => {
@@ -306,17 +358,14 @@
             }
         });
 
-        // 4. Enter Key for Admin
         document.getElementById('ovKey').addEventListener('keypress', (e) => {
             if(e.key === 'Enter') authO5();
         });
 
-        // 5. Start Sequence
         await runLoader();
         await loadData();
     }
 
-    // Fake Loading Animation
     function runLoader() {
         return new Promise(resolve => {
             const bar = document.getElementById('progress-bar');
@@ -335,10 +384,7 @@
         });
     }
 
-    /* ================================================================
-       DATABASE OPERATIONS
-       ================================================================
-    */
+    // --- DATABASE ---
     async function loadData() {
         const statusEl = document.getElementById('sys-msg');
         statusEl.innerText = "SYSTEM: SYNCING...";
@@ -349,7 +395,9 @@
             console.error(error);
             statusEl.innerText = "ERR: CONNECTION LOST";
             statusEl.style.color = "red";
+            // Wir zeigen beim Laden keinen Fullscreen Error, das nervt sonst.
         } else {
+            globalData = data;
             renderTable(data);
             if(isO5) {
                 statusEl.innerText = "STATUS: OVERSEER ACTIVE";
@@ -361,34 +409,41 @@
         }
     }
 
-    async function uploadData() {
+    async function handleSubmit() {
         const entry = {
             date: document.getElementById('inpDate').value,
             scp_id: document.getElementById('inpSCP').value.toUpperCase(),
             class: document.getElementById('inpClass').value,
             test_name: document.getElementById('inpTestName').value.toUpperCase(),
             scientist: document.getElementById('inpScientist').value || "UNKNOWN",
-            protocol_text: document.getElementById('inpProtocol').value
+            protocol_text: document.getElementById('inpProtocol').value,
+            owner_token: sessionToken 
         };
 
-        if(!entry.scp_id || !entry.test_name) return alert("ERROR: SCP-ID AND CODENAME REQUIRED.");
+        if(!entry.scp_id || !entry.test_name) {
+            throwError("PROTOCOL VIOLATION:<br>MISSING SCP-ID OR OPERATION NAME.");
+            return;
+        }
 
         const btn = document.getElementById('btnUpload');
         const originalText = btn.innerText;
-        btn.innerText = "ENCRYPTING...";
+        btn.innerText = editingId ? "OVERWRITING..." : "ENCRYPTING...";
         btn.disabled = true;
 
-        const { error } = await sb.from('protocols').insert([entry]);
+        let error = null;
+
+        if (editingId) {
+            const res = await sb.from('protocols').update(entry).eq('id', editingId);
+            error = res.error;
+        } else {
+            const res = await sb.from('protocols').insert([entry]);
+            error = res.error;
+        }
 
         if(error) {
-            alert("UPLOAD FAILED: " + error.message);
+            throwError("DATABASE UPLINK FAILED:<br>" + error.message.toUpperCase());
         } else {
-            document.getElementById('inpProtocol').value = "";
-            document.getElementById('inpTestName').value = "";
-            // Reset Scientist if not Anon
-            if(!document.getElementById('chkAnon').checked) {
-                document.getElementById('inpScientist').value = "";
-            }
+            resetForm(); 
             await loadData();
         }
         btn.innerText = originalText;
@@ -397,25 +452,104 @@
 
     async function deleteEntry(id) {
         if(!confirm("CONFIRM TERMINATION? ACTION IS IRREVERSIBLE.")) return;
-        
         const row = document.getElementById(`row-${id}`);
         if(row) row.classList.add('deleting');
 
         const { error } = await sb.from('protocols').delete().eq('id', id);
-        
         if(error) {
-            alert("DELETE FAILED: " + error.message);
             if(row) row.classList.remove('deleting');
+            throwError("TERMINATION FAILED:<br>" + error.message.toUpperCase());
         } else {
-            // Wait for animation
             setTimeout(loadData, 500);
         }
     }
 
-    /* ================================================================
-       RENDER LOGIC
-       ================================================================
-    */
+    // --- EDIT LOGIC ---
+    function editEntry(id) {
+        const entry = globalData.find(p => p.id === id);
+        if(!entry) return;
+
+        editingId = id;
+        const dateInput = document.getElementById('inpDate');
+        dateInput.value = entry.date;
+        dateInput.disabled = !isO5; // Only Admin can change date
+
+        document.getElementById('inpSCP').value = entry.scp_id;
+        document.getElementById('inpClass').value = entry.class;
+        document.getElementById('inpTestName').value = entry.test_name;
+        document.getElementById('inpProtocol').value = entry.protocol_text;
+
+        const inpSci = document.getElementById('inpScientist');
+        const chk = document.getElementById('chkAnon');
+        
+        if(entry.scientist === "[REDACTED]") {
+            chk.checked = true; inpSci.value = "[REDACTED]"; inpSci.disabled = true;
+        } else {
+            chk.checked = false; inpSci.value = entry.scientist; inpSci.disabled = false;
+        }
+
+        // Visuals
+        const sidebar = document.getElementById('sidebarPanel');
+        const btn = document.getElementById('btnUpload');
+        
+        document.getElementById('formTitle').innerText = "EDITING RECORD ID: " + id;
+        
+        if (isO5) {
+            document.getElementById('formTitle').style.color = "var(--edit-color)";
+            sidebar.classList.add('editing');
+            btn.classList.add('btn-edit-mode');
+        } else {
+            document.getElementById('formTitle').style.color = "var(--user-edit)";
+            sidebar.classList.add('user-editing');
+            btn.style.background = "var(--user-edit)";
+            btn.style.color = "black";
+            btn.style.borderColor = "var(--user-edit)";
+        }
+
+        btn.innerText = "OVERWRITE RECORD";
+        document.getElementById('btnCancel').style.display = 'block';
+
+        renderTable(globalData);
+    }
+
+    function resetForm() {
+        editingId = null;
+        
+        const dateInp = document.getElementById('inpDate');
+        dateInp.valueAsDate = new Date();
+        dateInp.disabled = false; 
+
+        document.getElementById('inpSCP').value = "";
+        document.getElementById('inpTestName').value = "";
+        document.getElementById('inpProtocol').value = "";
+        
+        const chk = document.getElementById('chkAnon');
+        if(!chk.checked) document.getElementById('inpScientist').value = "";
+
+        document.getElementById('formTitle').innerText = "LOG ENTRY PROTOCOL";
+        document.getElementById('formTitle').style.color = "var(--red)";
+        
+        const sidebar = document.getElementById('sidebarPanel');
+        sidebar.classList.remove('editing');
+        sidebar.classList.remove('user-editing');
+        
+        const btn = document.getElementById('btnUpload');
+        btn.innerText = "ENCRYPT & UPLOAD";
+        btn.classList.remove('btn-edit-mode');
+        btn.style.background = ""; 
+        btn.style.color = "";
+        btn.style.borderColor = "";
+        
+        document.getElementById('btnCancel').style.display = 'none';
+        
+        const rows = document.querySelectorAll('.tbl-row');
+        rows.forEach(r => {
+            r.classList.remove('editing-row');
+            r.classList.remove('user-editing-row');
+        });
+    }
+
+    // --- RENDER ---
     function escapeHtml(text) {
         if (!text) return "";
         return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -424,7 +558,6 @@
     function formatProtocol(text) {
         if (!text) return "";
         let safe = escapeHtml(text);
-        // Detect Google Docs and make clickable
         return safe.replace(/(https:\/\/docs\.google\.com\S+)/g, '<a href="$1" target="_blank" class="doc-link">[ACCESS DOCUMENT]</a>');
     }
 
@@ -437,16 +570,30 @@
             div.className = 'tbl-row grid-row';
             div.id = `row-${row.id}`;
             
-            // Visual Classes
+            if(editingId === row.id) {
+                if(isO5) div.classList.add('editing-row');
+                else div.classList.add('user-editing-row');
+            }
+            
             let color = "inherit";
             if(row.class === "KETER") color = "#ff4444";
             if(row.class === "SAFE") color = "#44ff44";
             if(row.class === "PENDING") color = "#ffaa00";
 
-            // Command Column
-            const cmdContent = isO5 
-                ? `<button class="btn-del" onclick="deleteEntry(${row.id})">DEL</button>` 
-                : `<span style="opacity:0.2">-</span>`;
+            const isOwner = row.owner_token && row.owner_token === sessionToken;
+            let cmdContent = `<span style="opacity:0.2">-</span>`;
+            
+            if(isO5) {
+                cmdContent = `
+                    <button class="btn-icon btn-edit" onclick="editEntry(${row.id})">EDIT</button>
+                    <button class="btn-icon btn-del" onclick="deleteEntry(${row.id})">DEL</button>
+                `;
+            } else if (isOwner) {
+                cmdContent = `
+                    <button class="btn-icon btn-user-edit" onclick="editEntry(${row.id})">EDIT</button>
+                    <button class="btn-icon btn-del" onclick="deleteEntry(${row.id})">DEL</button>
+                `;
+            }
 
             div.innerHTML = `
                 <div>${escapeHtml(row.date)}</div>
@@ -455,16 +602,13 @@
                 <div>${escapeHtml(row.test_name)}</div>
                 <div>${escapeHtml(row.scientist)}</div>
                 <div style="color:#ffcccc; opacity:0.9;">${formatProtocol(row.protocol_text)}</div>
-                <div style="padding:5px;">${cmdContent}</div>
+                <div style="padding:5px; text-align:center;">${cmdContent}</div>
             `;
             tbody.appendChild(div);
         });
     }
 
-    /* ================================================================
-       SECURITY & AUTH
-       ================================================================
-    */
+    // --- SECURITY ---
     async function sha256(message) {
         const msgBuffer = new TextEncoder().encode(message);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -480,24 +624,18 @@
             isO5 = true;
             document.getElementById('interface').classList.add('admin-mode');
             document.getElementById('ovKey').value = "";
-            loadData(); // Reload to render delete buttons
+            loadData(); 
         } else {
-            // Visual Error
-            const btn = document.querySelector('#ovKey + button');
-            btn.style.background = "red";
-            setTimeout(() => btn.style.background = "", 500);
-            alert("ACCESS DENIED");
+            throwError("SECURITY BREACH DETECTED:<br>INVALID OVERSEER CREDENTIALS");
         }
     }
 
-    // HELPER: Generate Hash for new passwords (runs in console)
     window.generateNewHash = async function(pwd) {
         const hash = await sha256(pwd);
         console.log(`%c PASSWORD: ${pwd} \n HASH: ${hash}`, "color: #0f0; font-size: 14px;");
         return hash;
     }
 
-    // Start App
     init();
 </script>
 
