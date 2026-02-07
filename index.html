@@ -183,6 +183,122 @@
         .btn-logout:hover { background: var(--primary); color: black; box-shadow: 0 0 10px var(--primary); }
 
         .content-area { display: flex; flex-direction: column; overflow: hidden; background: rgba(5, 5, 5, 0.3); }
+        
+        /* --- KOMPAKTER FILTER BUTTON --- */
+        .filter-bar {
+            background: rgba(15, 0, 0, 0.5); 
+            border-bottom: 1px solid var(--primary-dim);
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .btn-toggle-filter {
+            background: var(--primary-dim);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 8px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.75rem;
+            transition: all 0.3s;
+            letter-spacing: 1.5px;
+            font-weight: bold;
+            clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+        }
+        
+        .btn-toggle-filter:hover {
+            background: var(--primary);
+            color: black;
+            box-shadow: 0 0 15px var(--primary);
+        }
+        
+        .btn-toggle-filter.active {
+            background: var(--primary);
+            color: black;
+            box-shadow: 0 0 20px var(--primary), inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        
+        .result-counter {
+            color: var(--success-color);
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            flex: 1;
+            text-align: right;
+            opacity: 0.8;
+        }
+        
+        /* --- AUSKLAPPBARES FILTER PANEL --- */
+        .archive-search-panel {
+            background: rgba(20, 0, 0, 0.8); 
+            border-bottom: 2px solid var(--primary);
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 100px;
+            gap: 10px;
+            align-items: end;
+        }
+        
+        .archive-search-panel.open {
+            max-height: 120px;
+            padding: 15px;
+        }
+        
+        .search-input-wrapper {
+            position: relative;
+        }
+        
+        .search-input-wrapper input {
+            clip-path: none;
+            padding: 8px 35px 8px 10px;
+            font-size: 0.8rem;
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+            pointer-events: none;
+            font-size: 1rem;
+        }
+        
+        .filter-select {
+            clip-path: none;
+            padding: 8px;
+            font-size: 0.8rem;
+        }
+        
+        .archive-search-panel .input-group label {
+            font-size: 0.65rem;
+            margin-bottom: 3px;
+        }
+        
+        .btn-clear-filter {
+            background: transparent;
+            border: 1px solid var(--primary-dim);
+            color: var(--primary);
+            padding: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.7rem;
+            transition: all 0.3s;
+            clip-path: none;
+            height: fit-content;
+        }
+        
+        .btn-clear-filter:hover {
+            background: var(--primary-dim);
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+        }
+        
         .grid-row { display: grid; grid-template-columns: 0.8fr 0.6fr 0.6fr 1fr 1fr 1.2fr 130px; gap: 2px; border-bottom: 1px solid rgba(255,0,0,0.1); }
         .grid-row > div { padding: 12px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         
@@ -394,6 +510,49 @@
         </div>
 
         <div class="content-area">
+            <!-- KOMPAKTER FILTER BUTTON BAR -->
+            <div class="filter-bar">
+                <button class="btn-toggle-filter" id="btnToggleFilter" onclick="toggleFilterPanel()">
+                    [ ARCHIV-FILTER ] <span id="filterIndicator">▼</span>
+                </button>
+                <div class="result-counter" id="resultCounter">
+                    <span id="resultCount">0</span> / <span id="totalCount">0</span> EINTRÄGE
+                </div>
+            </div>
+            
+            <!-- AUSKLAPPBARES FILTER PANEL -->
+            <div class="archive-search-panel" id="filterPanel">
+                <div class="search-input-wrapper input-group">
+                    <label>SUCHE</label>
+                    <input type="text" id="searchQuery" placeholder="Testname, SCP-ID, etc..." style="text-transform: none;">
+                    <span class="search-icon">🔍</span>
+                </div>
+                
+                <div class="input-group">
+                    <label>VON</label>
+                    <input type="date" id="filterDateFrom" class="filter-select">
+                </div>
+                
+                <div class="input-group">
+                    <label>BIS</label>
+                    <input type="date" id="filterDateTo" class="filter-select">
+                </div>
+                
+                <div class="input-group">
+                    <label>KLASSE</label>
+                    <select id="filterClass" class="filter-select">
+                        <option value="">ALLE</option>
+                        <option value="SAFE">SAFE</option>
+                        <option value="EUCLID">EUCLID</option>
+                        <option value="KETER">KETER</option>
+                        <option value="THAUMIEL">THAUMIEL</option>
+                        <option value="PENDING">PENDING</option>
+                    </select>
+                </div>
+                
+                <button class="btn-clear-filter" onclick="clearAllFilters()">RESET</button>
+            </div>
+            
             <div class="tbl-head grid-row">
                 <div>DATE</div><div>ID</div><div>CLASS</div><div>OP_NAME</div><div>LEAD</div><div>DATA_LINK</div><div>CMD</div>
             </div>
@@ -418,9 +577,11 @@
     const sb = supabase.createClient(CONFIG.SB_URL, CONFIG.SB_KEY);
     let isO5 = false; 
     let globalData = [];
+    let filteredData = [];
     let editingId = null;
     let confirmResolver = null;
     let sessionToken = localStorage.getItem('scp_token');
+    let filterPanelOpen = false;
     
     if (!sessionToken) {
         sessionToken = crypto.randomUUID();
@@ -456,6 +617,27 @@
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // FILTER PANEL TOGGLE
+    function toggleFilterPanel() {
+        const panel = document.getElementById('filterPanel');
+        const btn = document.getElementById('btnToggleFilter');
+        const indicator = document.getElementById('filterIndicator');
+        
+        filterPanelOpen = !filterPanelOpen;
+        
+        if(filterPanelOpen) {
+            panel.classList.add('open');
+            btn.classList.add('active');
+            indicator.innerText = '▲';
+            playBeep(1200, 0.05, 'sine');
+        } else {
+            panel.classList.remove('open');
+            btn.classList.remove('active');
+            indicator.innerText = '▼';
+            playBeep(800, 0.05, 'sine');
+        }
     }
 
     async function authO5() {
@@ -512,6 +694,12 @@
         })
         .subscribe();
 
+        // Event Listeners für Filter
+        document.getElementById('searchQuery').addEventListener('input', applyFilters);
+        document.getElementById('filterDateFrom').addEventListener('change', applyFilters);
+        document.getElementById('filterDateTo').addEventListener('change', applyFilters);
+        document.getElementById('filterClass').addEventListener('change', applyFilters);
+
         await loadData();
     }
 
@@ -519,8 +707,54 @@
         const { data, error } = await sb.from('protocols').select('*').order('id', { ascending: false });
         if(!error) {
             globalData = data;
-            renderTable(data);
+            applyFilters();
         }
+    }
+
+    // FILTER-FUNKTION
+    function applyFilters() {
+        const searchTerm = document.getElementById('searchQuery').value.toLowerCase();
+        const dateFrom = document.getElementById('filterDateFrom').value;
+        const dateTo = document.getElementById('filterDateTo').value;
+        const classFilter = document.getElementById('filterClass').value;
+
+        filteredData = globalData.filter(entry => {
+            // Textsuche in Testname, SCP-ID, Wissenschaftler und Protokoll
+            const matchesSearch = !searchTerm || 
+                entry.test_name.toLowerCase().includes(searchTerm) ||
+                entry.scp_id.toLowerCase().includes(searchTerm) ||
+                entry.scientist.toLowerCase().includes(searchTerm) ||
+                (entry.protocol_text && entry.protocol_text.toLowerCase().includes(searchTerm));
+
+            // Datum von
+            const matchesDateFrom = !dateFrom || entry.date >= dateFrom;
+
+            // Datum bis
+            const matchesDateTo = !dateTo || entry.date <= dateTo;
+
+            // Klasse
+            const matchesClass = !classFilter || entry.class === classFilter;
+
+            return matchesSearch && matchesDateFrom && matchesDateTo && matchesClass;
+        });
+
+        updateResultCounter();
+        renderTable(filteredData);
+        playBeep(1500, 0.02, 'sine');
+    }
+
+    function updateResultCounter() {
+        document.getElementById('resultCount').innerText = filteredData.length;
+        document.getElementById('totalCount').innerText = globalData.length;
+    }
+
+    function clearAllFilters() {
+        document.getElementById('searchQuery').value = '';
+        document.getElementById('filterDateFrom').value = '';
+        document.getElementById('filterDateTo').value = '';
+        document.getElementById('filterClass').value = '';
+        applyFilters();
+        playBeep(800, 0.1, 'sawtooth');
     }
 
     async function handleSubmit() {
@@ -607,7 +841,7 @@
         document.getElementById('btnUpload').innerText = "REWRITE DATA";
         document.getElementById('btnCancel').style.display = 'block';
 
-        renderTable(globalData);
+        renderTable(filteredData);
     }
 
     function resetForm() {
